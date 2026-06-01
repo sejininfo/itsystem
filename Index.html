@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT 유지보수 요청 시스템</title>
+
+<!-- EmailJS (이메일 발송용) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<style>
+/* ── 리셋 & 기본 ───────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #533AB7; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+  --teal: #0F6E56;   --teal-light: #E1F5EE;
+  --amber: #BA7517;  --amber-light: #FAEEDA;
+  --red: #A32D2D;    --red-light: #FCEBEB;
+  --gray-bg: #F7F7F5;
+  --border: #E2E0D8;
+  --text: #1A1A18;
+  --text-2: #5F5E5A;
+  --text-3: #9B9B97;
+  --radius: 8px; --radius-lg: 12px;
+}
+body { font-family: 'Noto Sans KR', -apple-system, sans-serif; font-size: 13px; background: var(--gray-bg); color: var(--text); line-height: 1.5; }
+
+/* ── 레이아웃 ──────────────────────────────── */
+.app { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.header { margin-bottom: 1.5rem; }
+.header h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+.header p  { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+
+/* ── 탭 ────────────────────────────────────── */
+.tab-nav { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; overflow-x: auto; }
+.tb { padding: 9px 16px; font-size: 13px; font-weight: 500; border: none; background: none; cursor: pointer; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; display: flex; align-items: center; gap: 5px; transition: color .15s; }
+.tb.active { color: var(--purple-dark); border-bottom-color: var(--purple); }
+.tb:hover:not(.active) { color: var(--text); }
+.cnt { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--purple-light); color: var(--purple-dark); font-size: 10px; font-weight: 600; }
+.panel { display: none; } .panel.active { display: block; }
+
+/* ── 섹션 카드 ─────────────────────────────── */
+.sc { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: .75rem; }
+.st { font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: .75rem; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.pill { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+.pill-p { background: var(--purple-light); color: var(--purple-dark); }
+.pill-g { background: var(--teal-light); color: var(--teal); }
+.pill-a { background: var(--amber-light); color: var(--amber); }
+.pill-r { background: var(--red-light); color: var(--red); }
+
+/* ── 폼 ────────────────────────────────────── */
+.fg  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fg3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.full { grid-column: 1 / -1; }
+.fl { display: flex; flex-direction: column; gap: 3px; }
+label.lbl { font-size: 11px; color: var(--text-2); font-weight: 500; }
+input, select, textarea {
+  font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 7px 10px; width: 100%; background: #fff; color: var(--text); outline: none;
+  font-family: inherit; transition: border-color .15s, box-shadow .15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light);
+}
+textarea { resize: vertical; }
+
+/* ── 부품 체크박스 그리드 ──────────────────── */
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 6px; }
+.pi {
+  display: flex; align-items: center; gap: 6px; padding: 7px 9px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; font-size: 12px; transition: border-color .12s, background .12s; user-select: none;
+}
+.pi:hover { border-color: #B0ADE8; background: #FAFAF8; }
+.pi.sel { border-color: var(--purple); background: var(--purple-light); color: var(--purple-dark); }
+.pi input[type=checkbox] { width: auto; accent-color: var(--purple); cursor: pointer; flex-shrink: 0; }
+
+/* ── 케이블 ────────────────────────────────── */
+.cable-wrap {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 8px; padding: 8px 10px;
+  background: var(--gray-bg); border-radius: var(--radius);
+}
+.cable-wrap select { width: auto; flex: 1; min-width: 70px; font-size: 12px; padding: 5px 8px; }
+
+/* ── 수량 ──────────────────────────────────── */
+.qty-row { display: flex; align-items: center; gap: 6px; }
+.qb { width: 30px; height: 30px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--gray-bg); cursor: pointer; font-size: 16px; color: var(--text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .12s; }
+.qb:hover { background: #EBEBEB; }
+.qi { width: 52px; text-align: center; }
+
+/* ── 긴급도 ────────────────────────────────── */
+.urg-row { display: flex; gap: 5px; }
+.ub { flex: 1; padding: 7px; border: 1px solid var(--border); border-radius: var(--radius); background: none; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--text-2); transition: all .12s; }
+.ub.low.a { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
+.ub.mid.a { border-color: var(--amber); background: var(--amber-light); color: var(--amber); }
+.ub.hi.a  { border-color: var(--red); background: var(--red-light); color: var(--red); }
+
+/* ── 사진 ──────────────────────────────────── */
+.photo-zone {
+  border: 1.5px dashed var(--border); border-radius: var(--radius);
+  padding: 1.1rem; text-align: center; cursor: pointer;
+  background: var(--gray-bg); transition: border-color .12s, background .12s;
+}
+.photo-zone:hover { border-color: var(--purple); background: var(--purple-light); }
+.photo-zone input { display: none; }
+.photo-zone .icon { font-size: 24px; color: var(--text-3); }
+.photo-zone p { font-size: 12px; color: var(--text-2); margin-top: 5px; }
+.photo-zone small { font-size: 11px; color: var(--text-3); }
+.thumbs { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.thumb { position: relative; width: 62px; height: 62px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb .dx { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; background: var(--red); color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+
+/* ── 버튼 ──────────────────────────────────── */
+.sbtn {
+  width: 100%; padding: 11px; font-size: 14px; font-weight: 600; border: none;
+  border-radius: var(--radius); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 7px; margin-top: .5rem; transition: opacity .15s, transform .1s;
+  font-family: inherit;
+}
+.sbtn:hover { opacity: .9; }
+.sbtn:active { transform: scale(.99); }
+.sbtn.est { background: var(--purple); color: #fff; }
+.sbtn.ord { background: var(--teal); color: #fff; }
+.icon-btn {
+  font-size: 12px; padding: 4px 9px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: none; cursor: pointer; color: var(--text-2);
+  white-space: nowrap; transition: background .12s; font-family: inherit;
+}
+.icon-btn:hover { background: var(--gray-bg); }
+.icon-btn.cart { border-color: var(--teal); color: var(--teal); }
+.icon-btn.cart:hover { background: var(--teal-light); }
+
+/* ── 알림 바 ───────────────────────────────── */
+.toast { padding: 9px 14px; border-radius: var(--radius); font-size: 12px; margin-top: .5rem; display: none; font-weight: 500; }
+.toast.ok { background: var(--teal-light); color: var(--teal); border: 1px solid #9FE1CB; }
+.toast.err { background: var(--red-light); color: var(--red); border: 1px solid #F7C1C1; }
+
+/* ── 이력 탭 ───────────────────────────────── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: .875rem; }
+.stat-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem; text-align: center; }
+.stat-n { font-size: 24px; font-weight: 600; line-height: 1; }
+.stat-l { font-size: 11px; color: var(--text-2); margin-top: 4px; }
+.sync-bar { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; color: var(--text-2); margin-bottom: .75rem; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot.on { background: #1D9E75; } .dot.off { background: #888780; }
+.fr { display: flex; gap: 7px; margin-bottom: .875rem; flex-wrap: wrap; }
+.fr input, .fr select { font-size: 12px; flex: 1; min-width: 90px; }
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-2); padding: 8px 9px; border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--gray-bg); }
+td { padding: 8px 9px; border-bottom: 1px solid #F0EFE8; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+tr:hover td { background: #FAFAF8; }
+.bx { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.b-est { background: var(--purple-light); color: var(--purple-dark); }
+.b-ord { background: var(--teal-light); color: var(--teal); }
+.b-low { background: var(--teal-light); color: var(--teal); }
+.b-mid { background: var(--amber-light); color: var(--amber); }
+.b-hi  { background: var(--red-light); color: var(--red); }
+.b-new { background: var(--purple-light); color: var(--purple-dark); }
+.b-wip { background: var(--amber-light); color: var(--amber); }
+.b-done { background: #EAF3DE; color: #3B6D11; }
+.b-cancel { background: #F1EFE8; color: #5F5E5A; }
+.ss { font-size: 11px; padding: 3px 6px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; color: var(--text); cursor: pointer; }
+
+/* ── 상세 카드 ─────────────────────────────── */
+.dcard { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-top: .75rem; }
+.dr { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #F0EFE8; font-size: 12px; }
+.dr:last-child { border-bottom: none; }
+.dk { color: var(--text-2); font-size: 11px; flex-shrink: 0; margin-right: 8px; min-width: 80px; }
+
+/* ── 견적→주문 배너 ─────────────────────────── */
+.est-card {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 7px; background: #fff; transition: border-color .12s;
+}
+.est-card:hover { border-color: #B0ADE8; }
+.est-card-info { flex: 1; min-width: 0; }
+.est-card-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.est-card-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── 설정 탭 ───────────────────────────────── */
+.cfg-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F0EFE8; }
+.cfg-row:last-child { border-bottom: none; }
+.cfg-l { flex: 1; font-size: 13px; }
+.cfg-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.ci { flex: 2; }
+.ci input, .ci select { font-size: 12px; padding: 6px 9px; }
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.tsl { position: absolute; inset: 0; background: #D3D1C7; border-radius: 11px; cursor: pointer; transition: background .2s; }
+.tsl::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s; }
+.toggle input:checked + .tsl { background: var(--purple); }
+.toggle input:checked + .tsl::before { transform: translateX(18px); }
+.code-box { background: var(--gray-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.7; color: var(--text-2); margin-top: 10px; white-space: pre-wrap; overflow-x: auto; }
+
+/* ── 신규 주문 폼 토글 ─────────────────────── */
+.toggle-section-btn { width: 100%; text-align: left; padding: 9px 12px; border: 1px dashed var(--border); border-radius: var(--radius); background: none; cursor: pointer; font-size: 12px; color: var(--text-2); font-family: inherit; display: flex; align-items: center; gap: 6px; transition: background .12s; }
+.toggle-section-btn:hover { background: var(--gray-bg); }
+
+/* ── 반응형 ────────────────────────────────── */
+@media (max-width: 600px) {
+  .fg, .fg3 { grid-template-columns: 1fr; }
+  .full { grid-column: 1; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .tb { padding: 8px 10px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>IT 유지보수 요청 시스템</h1>
+    <p>견적 요청 → 주문 전환 · Google Sheets 자동 기록 · 이메일 알림</p>
+  </div>
+
+  <!-- ── 탭 네비게이션 ── -->
+  <div class="tab-nav">
+    <button class="tb active" onclick="sw('estimate')">📋 견적 요청</button>
+    <button class="tb" onclick="sw('order')">🛒 주문 요청 <span class="cnt" id="cart-cnt" style="display:none">0</span></button>
+    <button class="tb" onclick="sw('history')">📂 이력 조회</button>
+    <button class="tb" onclick="sw('settings')">⚙ 연동 설정</button>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       견적 요청 탭
+  ════════════════════════════════════════ -->
+  <div id="tab-estimate" class="panel active">
+
+    <div class="sc">
+      <div class="st">현장 정보 <span class="pill pill-p">필수</span></div>
+      <div class="fg">
+        <div class="fl"><label class="lbl">학교 / 현장명</label><input id="e-site" placeholder="예) OO초등학교"></div>
+        <div class="fl"><label class="lbl">부서명 / 성명</label><input id="e-dept" placeholder="예) 행정실 / 홍길동"></div>
+        <div class="fl"><label class="lbl">부서 메일주소</label><input type="email" id="e-email" placeholder="example@school.kr"></div>
+        <div class="fl"><label class="lbl">담당 기사명</label><input id="e-eng" placeholder="기사 이름"></div>
+      </div>
+    </div>
+
+    <div class="sc">
+      <div class="st">장비 정보</div>
+      <div class="fg">
+        <div class="fl"><label class="lbl">장비명</label>
+          <select id="e-dev">
+            <option value="">-- 선택 --</option>
+            <option>프린터</option><option>복합기</option><option>노트북</option>
+            <option>태블릿</option><option>소모품</option><option>기타</option>
+          </select>
+        </div>
+        <div class="fl"><label class="lbl">모델명</label><input id="e-model" placeholder="예) HP LaserJet M404n"></div>
+      </div>
+    </div>
+
+    <div class="sc">
+      <div class="st">부품 / 소모품</div>
+      <div class="pgrid">
+        <label class="pi"><input type="checkbox" value="토너(흑백)" onchange="tp(this)"> 토너 (흑백)</label>
+        <label class="pi"><input type="checkbox" value="토너(칼라)" onchange="tp(this)"> 토너 (칼라)</label>
+        <label class="pi"><input type="checkbox" value="잉크카트리지" onchange="tp(this)"> 잉크카트리지</label>
+        <label class="pi"><input type="checkbox" value="A4용지" onchange="tp(this)"> A4 용지</label>
+        <label class="pi"><input type="checkbox" value="플로터용지" onchange="tp(this)"> 플로터 용지</label>
+        <label class="pi"><input type="checkbox" value="노트북부품" onchange="tp(this)"> 노트북 부품</label>
+        <label class="pi"><input type="checkbox" value="프린터부품" onchange="tp(this)"> 프린터 부품</label>
+        <label class="pi"><input type="checkbox" value="복사기부품" onchange="tp(this)"> 복사기 부품</label>
+        <label class="pi"><input type="checkbox" value="케이블" onchange="tp(this);tcbl('e-cbl',this)"> 케이블</label>
+        <label class="pi"><input type="checkbox" value="기타" onchange="tp(this)"> 기타</label>
+      </div>
+      <div id="e-cbl" style="display:none">
+        <div class="cable-wrap">
+          <span style="font-size:11px;color:var(--text-2)">길이</span>
+          <select id="e-cm"><option>1 m</option><option>2 m</option><option>3 m</option><option>5 m</option><option>10 m</option><option>15 m</option><option>20 m</option><option>30 m</option></select>
+          <span style="font-size:11px;color:var(--text-2)">종류</span>
+          <select id="e-ct"><option>LAN</option><option>HDMI</option><option>DP</option><option>USB-A</option><option>USB-C</option><option>전원</option><option>기타</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="sc">
+      <div class="fg">
+        <div class="fl"><label class="lbl">수량</label>
+          <div class="qty-row">
+            <button class="qb" onclick="cq('e-qty',-1)">−</button>
+            <input type="number" id="e-qty" class="qi" value="1" min="1">
+            <button class="qb" onclick="cq('e-qty',1)">+</button>
+          </div>
+        </div>
+        <div class="fl"><label class="lbl">긴급도</label>
+          <div class="urg-row">
+            <button class="ub low" onclick="su(this,'e','low')">일반</button>
+            <button class="ub mid" onclick="su(this,'e','mid')">보통</button>
+            <button class="ub hi"  onclick="su(this,'e','hi')">긴급</button>
+          </div>
+        </div>
+        <div class="fl full"><label class="lbl">비고 / 증상</label>
+          <textarea id="e-note" rows="2" placeholder="장비 증상, 에러 내용, 추가 요청사항을 입력하세요"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="sc">
+      <div class="st">현장 사진 첨부 <span class="pill pill-a">선택</span></div>
+      <div class="photo-zone" onclick="document.getElementById('e-file').click()">
+        <input type="file" id="e-file" accept="image/*" multiple onchange="addPics(this,'e-prev','e')">
+        <div class="icon">📷</div>
+        <p>클릭하여 사진 추가 (여러 장 가능)</p>
+        <small>JPG · PNG · HEIC 지원</small>
+      </div>
+      <div class="thumbs" id="e-prev"></div>
+    </div>
+
+    <button class="sbtn est" onclick="submitEst()">📤 견적 요청 제출</button>
+    <div class="toast" id="e-toast"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       주문 요청 탭
+  ════════════════════════════════════════ -->
+  <div id="tab-order" class="panel">
+
+    <!-- 견적 기반 주문 전환 영역 -->
+    <div id="est-list-wrap"></div>
+
+    <!-- 신규 직접 주문 -->
+    <div class="sc" style="border-style:dashed">
+      <div class="st">신규 주문 직접 입력 <span class="pill pill-a">견적 없이 바로 주문</span></div>
+      <button class="toggle-section-btn" id="new-order-toggle" onclick="toggleNewOrder()">▼ 신규 주문 입력 열기</button>
+      <div id="new-order-form" style="display:none;margin-top:.75rem">
+        <div class="fg" style="margin-bottom:9px">
+          <div class="fl"><label class="lbl">학교 / 현장명</label><input id="o-site" placeholder="예) OO초등학교"></div>
+          <div class="fl"><label class="lbl">부서명 / 성명</label><input id="o-dept" placeholder="예) 행정실 / 홍길동"></div>
+          <div class="fl"><label class="lbl">부서 메일주소</label><input type="email" id="o-email" placeholder="example@school.kr"></div>
+          <div class="fl"><label class="lbl">담당 기사명</label><input id="o-eng" placeholder="기사 이름"></div>
+          <div class="fl"><label class="lbl">장비명</label>
+            <select id="o-dev"><option value="">-- 선택 --</option><option>프린터</option><option>복합기</option><option>노트북</option><option>태블릿</option><option>소모품</option><option>기타</option></select>
+          </div>
+          <div class="fl"><label class="lbl">모델명</label><input id="o-model" placeholder="모델명"></div>
+        </div>
+        <div class="pgrid" style="margin-bottom:9px">
+          <label class="pi"><input type="checkbox" value="토너(흑백)" onchange="tp(this)"> 토너 (흑백)</label>
+          <label class="pi"><input type="checkbox" value="토너(칼라)" onchange="tp(this)"> 토너 (칼라)</label>
+          <label class="pi"><input type="checkbox" value="잉크카트리지" onchange="tp(this)"> 잉크카트리지</label>
+          <label class="pi"><input type="checkbox" value="A4용지" onchange="tp(this)"> A4 용지</label>
+          <label class="pi"><input type="checkbox" value="플로터용지" onchange="tp(this)"> 플로터 용지</label>
+          <label class="pi"><input type="checkbox" value="노트북부품" onchange="tp(this)"> 노트북 부품</label>
+          <label class="pi"><input type="checkbox" value="프린터부품" onchange="tp(this)"> 프린터 부품</label>
+          <label class="pi"><input type="checkbox" value="복사기부품" onchange="tp(this)"> 복사기 부품</label>
+          <label class="pi"><input type="checkbox" value="케이블" onchange="tp(this);tcbl('o-cbl',this)"> 케이블</label>
+          <label class="pi"><input type="checkbox" value="기타" onchange="tp(this)"> 기타</label>
+        </div>
+        <div id="o-cbl" style="display:none;margin-bottom:9px">
+          <div class="cable-wrap">
+            <span style="font-size:11px;color:var(--text-2)">길이</span>
+            <select id="o-cm"><option>1 m</option><option>2 m</option><option>3 m</option><option>5 m</option><option>10 m</option><option>15 m</option><option>20 m</option><option>30 m</option></select>
+            <span style="font-size:11px;color:var(--text-2)">종류</span>
+            <select id="o-ct"><option>LAN</option><option>HDMI</option><option>DP</option><option>USB-A</option><option>USB-C</option><option>전원</option><option>기타</option></select>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl"><label class="lbl">수량</label>
+            <div class="qty-row">
+              <button class="qb" onclick="cq('o-qty',-1)">−</button>
+              <input type="number" id="o-qty" class="qi" value="1" min="1">
+              <button class="qb" onclick="cq('o-qty',1)">+</button>
+            </div>
+          </div>
+          <div class="fl"><label class="lbl">긴급도</label>
+            <div class="urg-row">
+              <button class="ub low" onclick="su(this,'o','low')">일반</button>
+              <button class="ub mid" onclick="su(this,'o','mid')">보통</button>
+              <button class="ub hi"  onclick="su(this,'o','hi')">긴급</button>
+            </div>
+          </div>
+          <div class="fl full"><label class="lbl">비고 / 배송 요청</label>
+            <textarea id="o-note" rows="2" placeholder="배송지, 납기일, 특이사항"></textarea>
+          </div>
+        </div>
+        <div class="sc" style="margin-top:9px">
+          <div class="st">사진 첨부 <span class="pill pill-a">선택</span></div>
+          <div class="photo-zone" onclick="document.getElementById('o-file').click()">
+            <input type="file" id="o-file" accept="image/*" multiple onchange="addPics(this,'o-prev','o')">
+            <div class="icon">📷</div>
+            <p>클릭하여 사진 추가</p>
+          </div>
+          <div class="thumbs" id="o-prev"></div>
+        </div>
+        <button class="sbtn ord" onclick="submitNewOrder()">🛒 신규 주문 제출</button>
+      </div>
+    </div>
+    <div class="toast" id="o-toast"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       이력 조회 탭
+  ════════════════════════════════════════ -->
+  <div id="tab-history" class="panel">
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="sync-bar">
+      <div class="dot off" id="sdot"></div>
+      <span id="stxt" style="flex:1">연동 상태 확인 중...</span>
+      <button class="icon-btn" onclick="syncFromSheets()">↺ 동기화</button>
+    </div>
+    <div class="fr">
+      <input id="h-q" placeholder="현장명, 기사명 검색..." oninput="rh()">
+      <select id="h-type" onchange="rh()"><option value="">전체 유형</option><option>견적</option><option>주문</option></select>
+      <select id="h-urg"  onchange="rh()"><option value="">전체 긴급도</option><option>일반</option><option>보통</option><option>긴급</option></select>
+      <select id="h-stat" onchange="rh()"><option value="">전체 상태</option><option>접수완료</option><option>처리중</option><option>완료</option><option>취소</option></select>
+    </div>
+    <div class="sc" style="padding:0;overflow:hidden">
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th style="width:105px">접수일시</th>
+            <th style="width:48px">유형</th>
+            <th style="width:105px">현장명</th>
+            <th style="width:68px">기사</th>
+            <th>장비/소모품</th>
+            <th style="width:36px">수량</th>
+            <th style="width:48px">긴급도</th>
+            <th style="width:90px">상태</th>
+            <th style="width:75px">액션</th>
+          </tr></thead>
+          <tbody id="hbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="dw"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       연동 설정 탭
+  ════════════════════════════════════════ -->
+  <div id="tab-settings" class="panel">
+    <div class="sc">
+      <div class="st">이메일 알림 설정 <span class="pill pill-p">EmailJS</span></div>
+      <div class="cfg-row"><div class="cfg-l"><div>알림 활성화</div><div class="cfg-sub">견적/주문 제출 시 관리자 자동 발송</div></div><label class="toggle"><input type="checkbox" id="cfg-me" onchange="saveCfg()"><span class="tsl"></span></label></div>
+      <div class="cfg-row"><div class="cfg-l">Service ID<div class="cfg-sub">EmailJS 대시보드 → Email Services</div></div><div class="ci"><input id="cfg-sid" placeholder="service_xxxxxxx" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">Template ID<div class="cfg-sub">Email Templates에서 생성</div></div><div class="ci"><input id="cfg-tid" placeholder="template_xxxxxxx" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">Public Key<div class="cfg-sub">Account → General → Public Key</div></div><div class="ci"><input id="cfg-pk" placeholder="user_xxxxxx" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">관리자 수신 이메일</div><div class="ci"><input type="email" id="cfg-adm" placeholder="admin@company.com" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l"><div>현장 담당자에게도 발송</div><div class="cfg-sub">요청자 메일로 접수 확인 발송</div></div><label class="toggle"><input type="checkbox" id="cfg-cc" onchange="saveCfg()"><span class="tsl"></span></label></div>
+      <div class="cfg-row"><div class="cfg-l"><div>상태 변경 시 담당자 통보</div><div class="cfg-sub">처리중·완료로 변경 시 이메일 발송</div></div><label class="toggle"><input type="checkbox" id="cfg-sn" onchange="saveCfg()"><span class="tsl"></span></label></div>
+    </div>
+
+    <div class="sc">
+      <div class="st">Google Sheets 연동 <span class="pill pill-g">Apps Script</span></div>
+      <div class="cfg-row"><div class="cfg-l"><div>Sheets 연동 활성화</div><div class="cfg-sub">제출 시 스프레드시트 자동 기록</div></div><label class="toggle"><input type="checkbox" id="cfg-gs" onchange="saveCfg()"><span class="tsl"></span></label></div>
+      <div class="cfg-row"><div class="cfg-l">웹앱 URL<div class="cfg-sub">배포 후 생성되는 /exec URL</div></div><div class="ci"><input id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">시트 이름<div class="cfg-sub">기록할 워크시트 탭 이름</div></div><div class="ci"><input id="cfg-sh" placeholder="이력관리" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l"><div>상태 자동 동기화</div><div class="cfg-sub">이력 탭 진입 시 시트 상태 가져오기</div></div><label class="toggle"><input type="checkbox" id="cfg-as" onchange="saveCfg()"><span class="tsl"></span></label></div>
+      <div class="code-box">// Apps Script 배포 순서
+// 1. Google Sheets 열기 → 확장 프로그램 → Apps Script
+// 2. Code.gs 파일에 제공된 코드 전체 붙여넣기
+// 3. SPREADSHEET_ID 변수에 시트 ID 입력
+// 4. initSheet() 함수 수동 실행 (헤더 자동 생성)
+// 5. 배포 → 새 배포 → 웹앱 → 액세스: 모든 사용자
+// 6. 배포 URL을 위 '웹앱 URL' 칸에 붙여넣기</div>
+    </div>
+
+    <button class="sbtn est" onclick="testConn()">🔌 연동 테스트</button>
+    <button class="sbtn" style="background:#fff;color:var(--text);border:1px solid var(--border);margin-top:.5rem" onclick="clearCfg()">설정 초기화</button>
+    <div class="toast" id="cfg-toast"></div>
+  </div>
+</div>
+
+<script>
+// ── 상태 ──────────────────────────────────────────
+const UM = { e: null, o: null };
+const pics = { e: [], o: [] };
+const records = [];
+
+// 샘플 데이터
+[
+  {id:'R001',date:'2026-05-31 09:12',type:'견적',site:'광은초등학교',dept:'행정실/김미영',email:'kim@school.kr',eng:'김철수',device:'복합기',parts:'토너(흑백)',qty:3,urg:'긴급',note:'세로줄 발생',photos:1,status:'처리중',linkedOrder:null},
+  {id:'R002',date:'2026-05-30 14:35',type:'주문',site:'서울중학교',dept:'교무실/박준호',email:'park@jh.kr',eng:'이영희',device:'소모품',parts:'A4용지',qty:5,urg:'일반',note:'',photos:0,status:'완료',linkedOrder:null},
+  {id:'R003',date:'2026-05-29 11:20',type:'견적',site:'한빛고등학교',dept:'행정실/최수진',email:'choi@hb.kr',eng:'박민준',device:'프린터',parts:'프린터부품',qty:1,urg:'보통',note:'급지 오류',photos:0,status:'완료',linkedOrder:'R004'},
+  {id:'R004',date:'2026-05-29 15:40',type:'주문',site:'한빛고등학교',dept:'행정실/최수진',email:'choi@hb.kr',eng:'박민준',device:'프린터',parts:'프린터부품',qty:1,urg:'보통',note:'[견적 R003 기반 주문]',photos:0,status:'접수완료',linkedOrder:'R003'},
+  {id:'R005',date:'2026-05-28 16:45',type:'견적',site:'광은초등학교',dept:'행정실/김미영',email:'kim@school.kr',eng:'김철수',device:'노트북',parts:'노트북부품',qty:2,urg:'보통',note:'',photos:0,status:'접수완료',linkedOrder:null},
+].forEach(r => records.push(r));
+
+// ── 설정 로드/저장 ────────────────────────────────
+function loadCfg() {
+  try {
+    const c = JSON.parse(localStorage.getItem('itms-cfg') || '{}');
+    if (c.me)  document.getElementById('cfg-me').checked = c.me;
+    if (c.sid) document.getElementById('cfg-sid').value = c.sid;
+    if (c.tid) document.getElementById('cfg-tid').value = c.tid;
+    if (c.pk)  document.getElementById('cfg-pk').value = c.pk;
+    if (c.adm) document.getElementById('cfg-adm').value = c.adm;
+    if (c.cc)  document.getElementById('cfg-cc').checked = c.cc;
+    if (c.sn)  document.getElementById('cfg-sn').checked = c.sn;
+    if (c.gs)  document.getElementById('cfg-gs').checked = c.gs;
+    if (c.url) document.getElementById('cfg-url').value = c.url;
+    if (c.sh)  document.getElementById('cfg-sh').value = c.sh;
+    if (c.as)  document.getElementById('cfg-as').checked = c.as;
+  } catch(e) {}
+}
+
+function saveCfg() {
+  try {
+    localStorage.setItem('itms-cfg', JSON.stringify({
+      me:  document.getElementById('cfg-me').checked,
+      sid: document.getElementById('cfg-sid').value,
+      tid: document.getElementById('cfg-tid').value,
+      pk:  document.getElementById('cfg-pk').value,
+      adm: document.getElementById('cfg-adm').value,
+      cc:  document.getElementById('cfg-cc').checked,
+      sn:  document.getElementById('cfg-sn').checked,
+      gs:  document.getElementById('cfg-gs').checked,
+      url: document.getElementById('cfg-url').value,
+      sh:  document.getElementById('cfg-sh').value,
+      as:  document.getElementById('cfg-as').checked,
+    }));
+  } catch(e) {}
+}
+
+function clearCfg() {
+  localStorage.removeItem('itms-cfg');
+  location.reload();
+}
+
+// ── 탭 전환 ───────────────────────────────────────
+function sw(name) {
+  document.querySelectorAll('.tb').forEach((b, i) =>
+    b.classList.toggle('active', ['estimate','order','history','settings'][i] === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'order') renderEstList();
+  if (name === 'history') { renderStats(); rh(); syncFromSheets(); }
+}
+
+// ── 폼 유틸 ───────────────────────────────────────
+function tp(cb) { cb.closest('.pi').classList.toggle('sel', cb.checked); }
+function tcbl(id, cb) { document.getElementById(id).style.display = cb.checked ? 'block' : 'none'; }
+function cq(id, d) { const el = document.getElementById(id); el.value = Math.max(1, parseInt(el.value || 1) + d); }
+
+function su(btn, p, lv) {
+  const tab = document.getElementById('tab-' + (p === 'e' ? 'estimate' : 'order'));
+  tab.querySelectorAll('.ub').forEach(b => b.classList.remove('a'));
+  btn.classList.add('a');
+  UM[p] = lv === 'low' ? '일반' : lv === 'mid' ? '보통' : '긴급';
+}
+
+function addPics(input, prevId, p) {
+  const prev = document.getElementById(prevId);
+  Array.from(input.files).forEach(f => {
+    const url = URL.createObjectURL(f);
+    pics[p].push(url);
+    const d = document.createElement('div'); d.className = 'thumb';
+    const img = document.createElement('img'); img.src = url;
+    const btn = document.createElement('button'); btn.className = 'dx'; btn.innerHTML = '×';
+    btn.onclick = ev => { ev.stopPropagation(); pics[p].splice(pics[p].indexOf(url), 1); d.remove(); };
+    d.append(img, btn); prev.appendChild(d);
+  });
+  input.value = '';
+}
+
+function getParts(prefix) {
+  const tab = document.getElementById('tab-' + (prefix === 'e' ? 'estimate' : 'order'));
+  const pts = [];
+  tab.querySelectorAll('.pi input:checked').forEach(cb => {
+    if (cb.value === '케이블') {
+      pts.push('케이블(' + document.getElementById(prefix + '-ct').value + ' ' + document.getElementById(prefix + '-cm').value + ')');
+    } else {
+      pts.push(cb.value);
+    }
+  });
+  return pts;
+}
+
+function nowStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' +
+    (d.getMonth()+1).toString().padStart(2,'0') + '-' +
+    d.getDate().toString().padStart(2,'0') + ' ' +
+    d.getHours().toString().padStart(2,'0') + ':' +
+    d.getMinutes().toString().padStart(2,'0');
+}
+
+function newId() { return 'R' + (records.length + 1).toString().padStart(3, '0'); }
+
+function toast(id, msg, ok) {
+  const t = document.getElementById(id);
+  t.className = 'toast ' + (ok ? 'ok' : 'err');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3500);
+}
+
+// ── Google Sheets 전송 ────────────────────────────
+async function postToSheets(data) {
+  const on  = document.getElementById('cfg-gs').checked;
+  const url = document.getElementById('cfg-url').value.trim();
+  const sh  = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  if (!on || !url) return;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ ...data, sheetName: sh }),
+      headers: { 'Content-Type': 'text/plain' } // Apps Script CORS 대응
+    });
+  } catch (err) { console.warn('Sheets 전송 실패:', err); }
+}
+
+// ── Sheets에서 상태 동기화 ────────────────────────
+async function syncFromSheets() {
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
+  dot.className = 'dot off'; txt.textContent = '동기화 중...';
+
+  const on  = document.getElementById('cfg-gs').checked;
+  const url = document.getElementById('cfg-url').value.trim();
+  const sh  = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  const autoSync = document.getElementById('cfg-as').checked;
+
+  if (!on || !url || !autoSync) {
+    dot.className = on ? 'dot on' : 'dot off';
+    txt.textContent = on ? 'Google Sheets 연동됨' : 'Google Sheets 미연동 — 설정 탭에서 URL 입력';
+    return;
+  }
+
+  try {
+    const res = await fetch(url + '?sheet=' + encodeURIComponent(sh));
+    const json = await res.json();
+    if (json.result === 'ok' && json.records) {
+      json.records.forEach(r => {
+        const local = records.find(x => x.id === r['접수ID']);
+        if (local && r['처리상태']) local.status = r['처리상태'];
+      });
+      rh();
+    }
+    dot.className = 'dot on';
+    txt.textContent = 'Google Sheets 동기화 완료 · ' + new Date().toLocaleTimeString('ko-KR');
+  } catch (err) {
+    dot.className = 'dot off';
+    txt.textContent = '동기화 실패 — 웹앱 URL을 확인하세요';
+  }
+}
+
+// ── EmailJS 발송 ──────────────────────────────────
+async function sendEmail(params) {
+  const on  = document.getElementById('cfg-me').checked;
+  const sid = document.getElementById('cfg-sid').value.trim();
+  const tid = document.getElementById('cfg-tid').value.trim();
+  const pk  = document.getElementById('cfg-pk').value.trim();
+  const adm = document.getElementById('cfg-adm').value.trim();
+  if (!on || !sid || !tid || !pk || !adm) return;
+  if (typeof emailjs === 'undefined') return;
+  try {
+    emailjs.init(pk);
+    await emailjs.send(sid, tid, { ...params, to_email: adm });
+    if (document.getElementById('cfg-cc').checked && params.site_email)
+      await emailjs.send(sid, tid, { ...params, to_email: params.site_email });
+  } catch (err) { console.warn('EmailJS 발송 실패:', err); }
+}
+
+// ── 견적 제출 ─────────────────────────────────────
+async function submitEst() {
+  const site = document.getElementById('e-site').value.trim();
+  const eng  = document.getElementById('e-eng').value.trim();
+  if (!site) { toast('e-toast', '현장명을 입력해주세요', false); return; }
+  if (!eng)  { toast('e-toast', '담당 기사명을 입력해주세요', false); return; }
+
+  const dept   = document.getElementById('e-dept').value.trim();
+  const email  = document.getElementById('e-email').value.trim();
+  const device = document.getElementById('e-dev').value;
+  const model  = document.getElementById('e-model').value.trim();
+  const qty    = parseInt(document.getElementById('e-qty').value || 1);
+  const note   = document.getElementById('e-note').value.trim();
+  const parts  = getParts('e');
+  const urg    = UM.e || '일반';
+  const item   = [device ? (device + (model ? ' (' + model + ')' : '')) : '', ...parts].filter(Boolean).join(', ') || '미기재';
+
+  const rec = { id: newId(), date: nowStr(), type: '견적', site, dept, email, eng,
+    device, parts: item, qty, urg, note, photos: pics.e.length, status: '접수완료', linkedOrder: null };
+  records.unshift(rec);
+  updateCartBadge();
+
+  await postToSheets(rec);
+  await sendEmail({ type: '견적요청', site, eng, item, qty, urg, note, date: rec.date, id: rec.id, site_email: email });
+
+  toast('e-toast', '견적 요청 접수 완료 [' + rec.id + '] — 주문 탭에서 바로 주문 전환 가능합니다', true);
+  pics.e = []; document.getElementById('e-prev').innerHTML = '';
+}
+
+// ── 신규 주문 직접 제출 ──────────────────────────
+async function submitNewOrder() {
+  const site = document.getElementById('o-site').value.trim();
+  const eng  = document.getElementById('o-eng').value.trim();
+  if (!site) { toast('o-toast', '현장명을 입력해주세요', false); return; }
+  if (!eng)  { toast('o-toast', '담당 기사명을 입력해주세요', false); return; }
+
+  const dept   = document.getElementById('o-dept').value.trim();
+  const email  = document.getElementById('o-email').value.trim();
+  const device = document.getElementById('o-dev').value;
+  const model  = document.getElementById('o-model').value.trim();
+  const qty    = parseInt(document.getElementById('o-qty').value || 1);
+  const note   = document.getElementById('o-note').value.trim();
+  const parts  = getParts('o');
+  const urg    = UM.o || '일반';
+  const item   = [device ? (device + (model ? ' (' + model + ')' : '')) : '', ...parts].filter(Boolean).join(', ') || '미기재';
+
+  const rec = { id: newId(), date: nowStr(), type: '주문', site, dept, email, eng,
+    device, parts: item, qty, urg, note, photos: pics.o.length, status: '접수완료', linkedOrder: null };
+  records.unshift(rec);
+
+  await postToSheets(rec);
+  await sendEmail({ type: '주문요청', site, eng, item, qty, urg, note, date: rec.date, id: rec.id, site_email: email });
+
+  toast('o-toast', '주문 요청 접수 완료 [' + rec.id + ']', true);
+  pics.o = []; document.getElementById('o-prev').innerHTML = '';
+  renderEstList();
+}
+
+// ── 견적 → 주문 전환 ─────────────────────────────
+async function orderFromEst(estId) {
+  const est = records.find(r => r.id === estId);
+  if (!est) return;
+
+  const newRec = {
+    id: newId(), date: nowStr(), type: '주문',
+    site: est.site, dept: est.dept, email: est.email, eng: est.eng,
+    device: est.device, parts: est.parts, qty: est.qty, urg: est.urg,
+    note: '[견적 ' + estId + ' 기반 주문] ' + (est.note || ''),
+    photos: 0, status: '접수완료', linkedOrder: estId
+  };
+  est.linkedOrder = newRec.id;
+  records.unshift(newRec);
+  updateCartBadge();
+
+  await postToSheets(newRec);
+  await sendEmail({ type: '주문요청(견적기반)', site: est.site, eng: est.eng,
+    item: est.parts, qty: est.qty, urg: est.urg, note: newRec.note,
+    date: newRec.date, id: newRec.id, site_email: est.email });
+
+  renderEstList();
+  toast('o-toast', '[' + estId + '] 견적 기반 주문 완료 → ' + newRec.id, true);
+}
+
+// ── 견적 대기 목록 렌더 ──────────────────────────
+function renderEstList() {
+  const wrap = document.getElementById('est-list-wrap');
+  const pending = records.filter(r => r.type === '견적' && !r.linkedOrder && r.status !== '취소');
+
+  if (!pending.length) {
+    wrap.innerHTML = '<div class="sc" style="text-align:center;padding:1.5rem;color:var(--text-3);font-size:13px">주문 대기 중인 견적이 없습니다</div>';
+    return;
+  }
+
+  wrap.innerHTML = '<div class="sc"><div class="st">견적 요청건 — 주문 전환 <span class="pill pill-p">' + pending.length + '건 대기</span></div>' +
+    pending.map(r => `
+      <div class="est-card">
+        <div class="est-card-info">
+          <div class="est-card-title">
+            <span class="bx b-est">${r.id}</span>
+            ${r.site}
+            <span class="bx ${r.urg === '긴급' ? 'b-hi' : r.urg === '보통' ? 'b-mid' : 'b-low'}">${r.urg}</span>
+          </div>
+          <div class="est-card-sub">${r.parts} · 수량 ${r.qty} · ${r.eng} · ${r.date.slice(0, 10)}</div>
+          ${r.note ? '<div style="font-size:11px;color:var(--text-3);margin-top:2px">비고: ' + r.note + '</div>' : ''}
+        </div>
+        <button class="icon-btn cart" onclick="orderFromEst('${r.id}')">🛒 주문 전환</button>
+      </div>
+    `).join('') + '</div>';
+}
+
+function updateCartBadge() {
+  const cnt = records.filter(r => r.type === '견적' && !r.linkedOrder && r.status !== '취소').length;
+  const el = document.getElementById('cart-cnt');
+  el.style.display = cnt > 0 ? 'inline-flex' : 'none';
+  el.textContent = cnt;
+}
+
+function toggleNewOrder() {
+  const f = document.getElementById('new-order-form');
+  const btn = document.getElementById('new-order-toggle');
+  const open = f.style.display === 'none';
+  f.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '▲ 신규 주문 입력 닫기' : '▼ 신규 주문 입력 열기';
+}
+
+// ── 이력 통계 ─────────────────────────────────────
+function renderStats() {
+  const total = records.length;
+  const est   = records.filter(r => r.type === '견적').length;
+  const ord   = records.filter(r => r.type === '주문').length;
+  const hi    = records.filter(r => r.urg === '긴급' && r.status !== '완료').length;
+  document.getElementById('stat-grid').innerHTML = [
+    ['전체 접수', total, ''],
+    ['견적 요청', est, 'color:var(--purple-dark)'],
+    ['주문 건수', ord, 'color:var(--teal)'],
+    ['긴급 미처리', hi, 'color:var(--red)'],
+  ].map(([l, n, s]) => `<div class="stat-card"><div class="stat-n" style="${s}">${n}</div><div class="stat-l">${l}</div></div>`).join('');
+}
+
+// ── 이력 테이블 렌더 ─────────────────────────────
+function rh() {
+  const q    = (document.getElementById('h-q').value || '').toLowerCase();
+  const type = document.getElementById('h-type').value;
+  const urg  = document.getElementById('h-urg').value;
+  const stat = document.getElementById('h-stat').value;
+
+  const list = records.filter(r =>
+    (!q    || r.site.toLowerCase().includes(q) || r.eng.toLowerCase().includes(q)) &&
+    (!type || r.type === type) && (!urg || r.urg === urg) && (!stat || r.status === stat));
+
+  const tbody = document.getElementById('hbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-3)">해당 이력 없음</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td style="font-size:11px;color:var(--text-2)">${r.date}</td>
+      <td><span class="bx ${r.type === '견적' ? 'b-est' : 'b-ord'}">${r.type}</span></td>
+      <td style="font-weight:600">${r.site}</td>
+      <td>${r.eng}</td>
+      <td title="${r.parts}">${r.parts}</td>
+      <td style="text-align:right">${r.qty}</td>
+      <td><span class="bx ${r.urg === '긴급' ? 'b-hi' : r.urg === '보통' ? 'b-mid' : 'b-low'}">${r.urg}</span></td>
+      <td>
+        <select class="ss" onchange="updateStatus('${r.id}', this.value)">
+          <option ${r.status === '접수완료' ? 'selected' : ''}>접수완료</option>
+          <option ${r.status === '처리중'   ? 'selected' : ''}>처리중</option>
+          <option ${r.status === '완료'     ? 'selected' : ''}>완료</option>
+          <option ${r.status === '취소'     ? 'selected' : ''}>취소</option>
+        </select>
+      </td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+        <button class="icon-btn" onclick="showDetail('${r.id}')">상세</button>
+        ${r.type === '견적' && !r.linkedOrder && r.status !== '취소'
+          ? '<button class="icon-btn cart" onclick="orderFromEst(\'' + r.id + '\')">주문</button>'
+          : ''}
+        ${r.linkedOrder
+          ? '<span style="font-size:10px;color:var(--text-3)">→' + r.linkedOrder + '</span>'
+          : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── 상태 업데이트 ────────────────────────────────
+async function updateStatus(id, val) {
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+  rec.status = val;
+  renderStats();
+
+  const gsOn = document.getElementById('cfg-gs').checked;
+  const url  = document.getElementById('cfg-url').value.trim();
+  const sh   = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  if (gsOn && url) {
+    try {
+      await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'updateStatus', id, status: val, sheetName: sh }),
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    } catch (err) { console.warn('상태 업데이트 Sheets 전송 실패:', err); }
+  }
+
+  const sn = document.getElementById('cfg-sn').checked;
+  if (sn && rec.email) {
+    sendEmail({ type: '상태업데이트', site: rec.site, eng: rec.eng,
+      item: rec.parts, status: val, id, site_email: rec.email });
+  }
+}
+
+// ── 상세 보기 ────────────────────────────────────
+function showDetail(id) {
+  const r  = records.find(x => x.id === id);
+  const dw = document.getElementById('dw');
+  if (!r) return;
+  if (dw.dataset.open === id) { dw.innerHTML = ''; dw.dataset.open = ''; return; }
+  dw.dataset.open = id;
+  const stCls = r.status === '완료' ? 'b-done' : r.status === '처리중' ? 'b-wip' : r.status === '취소' ? 'b-cancel' : 'b-new';
+  dw.innerHTML = `<div class="dcard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:14px;font-weight:600">${r.id} 상세</span>
+      <button onclick="document.getElementById('dw').innerHTML=''" style="border:none;background:none;cursor:pointer;color:var(--text-2);font-size:18px">×</button>
+    </div>
+    ${[['접수일시',r.date],['유형','<span class="bx '+(r.type==='견적'?'b-est':'b-ord')+'">'+r.type+'</span>'],
+      ['현장명',r.site],['부서/성명',r.dept||'-'],['메일',r.email||'-'],['담당기사',r.eng],
+      ['장비/소모품',r.parts],['수량',r.qty],['긴급도','<span class="bx '+(r.urg==='긴급'?'b-hi':r.urg==='보통'?'b-mid':'b-low')+'">'+r.urg+'</span>'],
+      ['비고',r.note||'-'],['첨부사진',r.photos+'장'],['연결건',r.linkedOrder||'-'],
+      ['상태','<span class="bx '+stCls+'">'+r.status+'</span>']
+    ].map(([k,v])=>'<div class="dr"><span class="dk">'+k+'</span><span>'+v+'</span></div>').join('')}
+    ${r.type==='견적'&&!r.linkedOrder&&r.status!=='취소'
+      ?'<div style="margin-top:10px"><button class="icon-btn cart" style="width:100%;justify-content:center;padding:8px" onclick="orderFromEst(\''+r.id+'\');document.getElementById(\'dw\').innerHTML=\'\'">🛒 이 견적으로 주문 전환</button></div>':''}
+  </div>`;
+}
+
+// ── 연동 테스트 ──────────────────────────────────
+async function testConn() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const sid = document.getElementById('cfg-sid').value.trim();
+  if (!url && !sid) { toast('cfg-toast', '연동 정보를 먼저 입력하세요', false); return; }
+
+  const t = document.getElementById('cfg-toast');
+  t.className = 'toast ok'; t.textContent = '테스트 전송 중...'; t.style.display = 'block';
+
+  const testRec = { id: 'TEST-' + Date.now(), date: nowStr(), type: '테스트', site: '연동테스트',
+    dept: '', email: '', eng: '', device: '', parts: '', qty: 1, urg: '일반', note: '연동 테스트 데이터', photos: 0, status: '접수완료', linkedOrder: null };
+
+  if (url) {
+    const sh = document.getElementById('cfg-sh').value.trim() || '이력관리';
+    try {
+      await fetch(url, { method: 'POST', body: JSON.stringify({ ...testRec, sheetName: sh }), headers: { 'Content-Type': 'text/plain' } });
+      toast('cfg-toast', 'Google Sheets 전송 성공', true);
+    } catch (err) {
+      toast('cfg-toast', 'Sheets 전송 실패: CORS 정책상 배포 환경에서 확인하세요', false);
+    }
+  } else {
+    toast('cfg-toast', '설정값 저장됨 — 실제 연동은 배포 후 확인하세요', true);
+  }
+}
+
+// ── 초기화 ───────────────────────────────────────
+loadCfg();
+renderEstList();
+updateCartBadge();
+</script>
+</body>
+</html>
