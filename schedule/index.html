@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세진인포 | 공기청정기 점검 스케줄</title>
+<style>
+:root{
+  --navy:#0D1B3E; --teal:#5B9DAF; --teal-lt:#EBF5F8;
+  --bg:#F7F8FA; --card:#FFFFFF; --text:#1C2B3A; --muted:#8896A5;
+  --border:#E4E9EF; --border2:#C8D4DC;
+  --kim:#2563EB; --kim-lt:#EFF6FF;
+  --baek:#059669; --baek-lt:#ECFDF5;
+  --noh:#7C3AED; --noh-lt:#F5F3FF;
+  --kwak:#B45309; --kwak-lt:#FFFBEB;
+  --etc:#475569; --etc-lt:#F1F5F9;
+  --ok:#10B981; --warn:#F59E0B; --danger:#EF4444;
+  --filter:#8B5CF6; --filter-lt:#F5F3FF;
+  --morning:#ECFDF5; --morning-tx:#065F46;
+  --lunch:#FFFBEB;  --lunch-tx:#92400E;
+  --afternoon:#EFF6FF; --afternoon-tx:#1E40AF;
+  --stripe:repeating-linear-gradient(135deg,#f3f4f6 0,#f3f4f6 5px,#e9eaec 5px,#e9eaec 10px);
+  --radius:10px; --radius-sm:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Malgun Gothic',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--navy);color:#fff;
+  display:flex;align-items:center;gap:12px;
+  padding:0 20px;height:52px;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  position:relative;z-index:50;
+}
+.logo-mark{width:28px;height:28px;background:var(--teal);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:-.3px;}
+.logo-text span{color:var(--teal);opacity:.9;}
+.topbar-div{width:1px;height:20px;background:rgba(255,255,255,.15);}
+.month-nav{display:flex;align-items:center;gap:6px;}
+.month-nav button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.month-nav button:hover{background:rgba(255,255,255,.2);}
+.month-label{font-size:15px;font-weight:700;min-width:84px;text-align:center;letter-spacing:-.3px;}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:6px;}
+.tbtn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:12px;font-weight:600;transition:.15s;white-space:nowrap;}
+.tbtn:hover{opacity:.85;}
+.tbtn-outline{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);}
+.tbtn-teal{background:var(--teal);color:#fff;}
+.tbtn-green{background:#059669;color:#fff;}
+.tbtn-blue{background:#2563EB;color:#fff;}
+
+/* ── TABS ── */
+.tabs{display:flex;background:var(--navy);padding:0 20px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
+.tab{padding:0 16px;height:38px;display:flex;align-items:center;cursor:pointer;color:rgba(255,255,255,.45);font-size:12px;font-weight:600;border-bottom:2px solid transparent;gap:5px;transition:.2s;}
+.tab:hover{color:rgba(255,255,255,.8);}
+.tab.active{color:#fff;border-bottom-color:var(--teal);}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:248px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+.sb-sec{padding:12px 14px;border-bottom:1px solid var(--border);}
+.sb-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+
+/* 진행 박스 */
+.progress-box{background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;display:flex;flex-direction:column;gap:7px;}
+.prog-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;}
+.prog-label{color:var(--muted);display:flex;align-items:center;gap:4px;}
+.prog-val{font-weight:700;color:var(--text);font-size:12px;}
+.prog-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;transition:width .4s;}
+.prog-fill.c-check{background:var(--teal);}
+.prog-fill.c-filter{background:var(--filter);}
+
+/* 담당자 칩 */
+.mgr-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.mgr-chip{padding:3px 9px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);background:var(--bg);transition:.15s;}
+.mgr-chip:hover{border-color:var(--border2);}
+.mgr-chip.on.kim{background:var(--kim);color:#fff;border-color:var(--kim);}
+.mgr-chip.on.baek{background:var(--baek);color:#fff;border-color:var(--baek);}
+.mgr-chip.on.noh{background:var(--noh);color:#fff;border-color:var(--noh);}
+.mgr-chip.on.kwak{background:var(--kwak);color:#fff;border-color:var(--kwak);}
+.mgr-chip.on.etc{background:var(--etc);color:#fff;border-color:var(--etc);}
+
+/* 클러스터 필터 */
+.cl-chips{display:flex;flex-wrap:wrap;gap:3px;}
+.cl-chip{padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;background:var(--bg);color:var(--muted);cursor:pointer;border:1.5px solid var(--border);transition:.15s;}
+.cl-chip:hover{border-color:var(--border2);}
+.cl-chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.cl-chip:first-child.active{background:var(--teal);border-color:var(--teal);}
+
+/* 검색 */
+.search-wrap{position:relative;}
+.search-input{width:100%;padding:7px 30px 7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;outline:none;background:var(--bg);color:var(--text);transition:.15s;}
+.search-input:focus{border-color:var(--teal);background:#fff;}
+.search-x{position:absolute;right:9px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:11px;display:none;}
+.search-x.show{display:block;}
+.opt-row{display:flex;flex-direction:column;gap:4px;margin-top:7px;}
+.opt-check{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;}
+.opt-check input{cursor:pointer;accent-color:var(--teal);}
+.opt-check.filter-opt{color:var(--filter);}
+.hint{font-size:10px;color:var(--teal);margin-top:5px;}
+
+/* 학교 목록 */
+.list-meta{display:flex;justify-content:space-between;padding:5px 14px 3px;font-size:10px;color:var(--muted);}
+.school-list{flex:1;overflow-y:auto;padding:4px 6px 10px;}
+
+/* 학교 카드 */
+.scard{
+  padding:8px 10px;border-radius:var(--radius-sm);margin-bottom:3px;
+  border:1.5px solid var(--border);background:var(--card);
+  cursor:grab;transition:all .15s;user-select:none;position:relative;
+}
+.scard:hover:not(.done):not(.skip){
+  border-color:var(--teal);
+  box-shadow:var(--shadow-md);
+  transform:translateY(-1px);
+}
+.scard.dragging{opacity:.35;transform:scale(.97);}
+.scard.done{background:var(--stripe);opacity:.45;cursor:not-allowed;border-color:var(--border);}
+.scard.done .scard-name{text-decoration:line-through;color:var(--muted);}
+.scard.assigned{border-color:#A7F3D0;background:#F0FDF4;}
+.scard.assigned:hover{border-color:var(--ok);box-shadow:0 2px 8px rgba(16,185,129,.2);transform:translateY(-1px);}
+.scard.filter-target{border-color:var(--filter);background:var(--filter-lt);}
+.scard.filter-target.done{border-color:var(--border);background:var(--stripe);}
+.scard.skip{background:#f9fafb;opacity:.4;cursor:not-allowed;}
+
+.scard-badge{position:absolute;right:8px;top:8px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;}
+.badge-done{background:var(--ok);color:#fff;}
+.badge-filter{background:var(--filter);color:#fff;}
+.badge-skip{background:var(--muted);color:#fff;}
+
+.scard-name{font-weight:700;font-size:12px;padding-right:56px;color:var(--text);}
+.scard-sub{font-size:10px;color:var(--muted);margin-top:3px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.scard-time{font-size:9px;color:var(--muted);margin-top:2px;opacity:.8;}
+
+/* 배지 */
+.tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;}
+.t-kim{background:var(--kim-lt);color:var(--kim);}
+.t-baek{background:var(--baek-lt);color:var(--baek);}
+.t-noh{background:var(--noh-lt);color:var(--noh);}
+.t-kwak{background:var(--kwak-lt);color:var(--kwak);}
+.t-etc{background:var(--etc-lt);color:var(--etc);}
+.t-unmgr{background:#FEF3C7;color:#92400E;border:1px dashed #FCD34D;}
+.t-lg{background:#FEE2E2;color:var(--danger);}
+.t-md{background:#FEF3C7;color:#92400E;}
+.t-sm{background:var(--morning);color:var(--morning-tx);}
+.t-sp{background:#EFF6FF;color:#1D4ED8;}
+.t-cl{background:#FFFBEB;color:#92400E;}
+.t-filter{background:var(--filter-lt);color:var(--filter);}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:16px;}
+
+/* stats summary */
+.month-summary{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:100px;border-top:3px solid #ccc;box-shadow:var(--shadow);}
+.sum-card.kim{border-top-color:var(--kim);}
+.sum-card.baek{border-top-color:var(--baek);}
+.sum-card.noh{border-top-color:var(--noh);}
+.sum-card.kwak{border-top-color:var(--kwak);}
+.sum-name{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:2px;}
+.sum-val{font-size:20px;font-weight:800;color:var(--text);line-height:1.1;}
+.sum-unit{font-size:11px;font-weight:400;color:var(--muted);}
+.sum-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+
+/* 주간 캘린더 */
+.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.cal-nav button{background:var(--card);border:1.5px solid var(--border);padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text);transition:.15s;}
+.cal-nav button:hover{border-color:var(--border2);background:var(--bg);}
+.cal-nav-label{font-size:13px;font-weight:700;color:var(--text);min-width:130px;text-align:center;}
+.cal-hd{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:4px;}
+.cal-hd-cell{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:3px;}
+.cal-grid{display:flex;flex-direction:column;gap:10px;}
+.cal-week-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+
+/* 날짜 칼럼 */
+.day-col{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);min-height:140px;padding:10px;box-shadow:var(--shadow);transition:.15s;}
+.day-col.today{border-color:var(--teal);box-shadow:0 0 0 3px rgba(91,157,175,.15);}
+.day-col.drag-over{border-color:var(--teal);background:var(--teal-lt);}
+.day-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.day-date{font-size:13px;font-weight:800;color:var(--text);}
+.day-total{font-size:10px;background:var(--navy);color:#fff;padding:2px 7px;border-radius:10px;font-weight:600;}
+.day-entries{display:flex;flex-direction:column;gap:3px;}
+
+/* 엔트리 */
+.entry{padding:4px 7px;border-radius:5px;font-size:11px;display:flex;align-items:center;gap:4px;border:1px solid transparent;transition:.1s;}
+.entry:hover{filter:brightness(.94);}
+.entry-icon{flex-shrink:0;font-size:9px;}
+.entry-name{font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.entry-cnt{font-weight:700;font-size:10px;white-space:nowrap;}
+.entry-mgr{font-size:9px;opacity:.7;white-space:nowrap;}
+.assign-btn{
+  cursor:pointer!important;
+  padding:1px 5px;
+  border-radius:5px;
+  font-weight:700!important;
+  opacity:1!important;
+  transition:.15s;
+}
+.assign-btn:hover{
+  background:rgba(0,0,0,.1);
+  text-decoration:underline;
+}
+.assign-btn.need-assign{
+  background:#FEF9C3;
+  color:#854D0E!important;
+  border:1px dashed #FCD34D;
+  padding:1px 5px;
+  border-radius:5px;
+  animation: pulse-warn 1.5s infinite;
+}
+@keyframes pulse-warn{
+  0%,100%{opacity:1;}
+  50%{opacity:.6;}
+}
+.entry-del{opacity:0;cursor:pointer;padding:0 2px;border:none;background:none;color:inherit;font-size:10px;flex-shrink:0;}
+.entry:hover .entry-del{opacity:1;}
+.ek-kim{background:var(--kim-lt);color:var(--kim);border-color:#BFDBFE;}
+.ek-baek{background:var(--baek-lt);color:var(--baek);border-color:#A7F3D0;}
+.ek-noh{background:var(--noh-lt);color:var(--noh);border-color:#DDD6FE;}
+.ek-kwak{background:var(--kwak-lt);color:var(--kwak);border-color:#FDE68A;}
+.ek-etc{background:var(--etc-lt);color:var(--etc);border-color:#CBD5E1;}
+.ek-unmgr{background:#FEF9C3;color:#854D0E;border:1px dashed #FCD34D;}
+.ek-filter{background:var(--filter-lt);color:var(--filter);border:1.5px dashed #C4B5FD;}
+
+/* 담당자 지정 팝업 */
+.mgr-popup{position:absolute;top:100%;left:0;z-index:99;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:6px;min-width:140px;display:none;flex-direction:column;gap:2px;}
+.mgr-popup.open{display:flex;}
+.mgr-popup-item{padding:5px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;transition:.1s;}
+.mgr-popup-item:hover{background:var(--bg);}
+
+/* ── 최적배정 탭 ── */
+.opt-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.opt-header h2{font-size:15px;font-weight:700;color:var(--text);}
+.opt-mode-btns{display:flex;gap:5px;}
+.opt-mode-btn{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:var(--card);color:var(--muted);transition:.15s;}
+.opt-mode-btn.m-check{background:var(--teal);color:#fff;border-color:var(--teal);}
+.opt-mode-btn.m-filter{background:var(--filter);color:#fff;border-color:var(--filter);}
+.opt-mgr-btns{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;}
+.opt-mgr-btn{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:var(--card);color:var(--muted);transition:.15s;}
+.opt-mgr-btn.on.kim{background:var(--kim);color:#fff;border-color:var(--kim);}
+.opt-mgr-btn.on.baek{background:var(--baek);color:#fff;border-color:var(--baek);}
+.opt-mgr-btn.on.noh{background:var(--noh);color:#fff;border-color:var(--noh);}
+.opt-mgr-btn.on.kwak{background:var(--kwak);color:#fff;border-color:var(--kwak);}
+.opt-mgr-btn.on.etc{background:var(--etc);color:#fff;border-color:var(--etc);}
+
+/* 클러스터 카드 */
+.cl-cards{display:flex;flex-direction:column;gap:10px;}
+.cl-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+.cl-card-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);}
+.cl-card-hd.h-check{background:var(--navy);}
+.cl-card-hd.h-filter{background:var(--filter);}
+.cl-card-title{font-size:13px;font-weight:700;color:#fff;}
+.cl-card-meta{font-size:10px;color:rgba(255,255,255,.65);display:flex;gap:10px;margin-top:2px;}
+.cl-card-body{padding:12px 14px;}
+.cl-mgr-tags{display:flex;gap:4px;flex-wrap:wrap;}
+
+/* 시간대 그리드 */
+.time-grid{display:grid;grid-template-columns:72px 1fr 1fr 1fr;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:8px;}
+.tg-hd{padding:6px 8px;font-size:10px;font-weight:700;text-align:center;border-bottom:1px solid var(--border);}
+.tg-hd.h0{background:var(--bg);color:var(--muted);}
+.tg-hd.h1{background:var(--morning);color:var(--morning-tx);}
+.tg-hd.h2{background:var(--lunch);color:var(--lunch-tx);}
+.tg-hd.h3{background:var(--afternoon);color:var(--afternoon-tx);}
+.tg-cell{padding:7px 8px;font-size:11px;vertical-align:top;}
+.tg-cell:not(:last-child){border-right:1px solid var(--border);}
+.tg-cell.c0{background:#FAFBFC;font-size:10px;font-weight:700;color:var(--muted);display:flex;align-items:center;}
+.tg-cell.c1{background:#FAFFFE;}
+.tg-cell.c2{background:#FFFDF8;}
+.tg-cell.c3{background:#F8FBFF;}
+
+/* 학교 칩 */
+.chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;margin:2px;cursor:pointer;border:1.5px solid transparent;transition:.15s;}
+.chip:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.chip.done{opacity:.35;text-decoration:line-through;cursor:default;}
+.chip.done:hover{box-shadow:none;transform:none;}
+.chip.skip{opacity:.25;cursor:not-allowed;}
+.chip.skip:hover{box-shadow:none;transform:none;}
+.ck-kim{background:var(--kim-lt);color:var(--kim);border-color:#BFDBFE;}
+.ck-baek{background:var(--baek-lt);color:var(--baek);border-color:#A7F3D0;}
+.ck-noh{background:var(--noh-lt);color:var(--noh);border-color:#DDD6FE;}
+.ck-kwak{background:var(--kwak-lt);color:var(--kwak);border-color:#FDE68A;}
+.ck-etc{background:var(--etc-lt);color:var(--etc);border-color:#CBD5E1;}
+.ck-filter{background:var(--filter-lt);color:var(--filter);border:1.5px dashed #C4B5FD;}
+.chip-cnt{font-size:9px;background:rgba(0,0,0,.08);padding:0 4px;border-radius:5px;}
+.empty-cell{color:var(--border2);font-size:10px;font-style:italic;}
+
+/* 클러스터 요약 */
+.cl-summary{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.cl-sum-item{background:var(--bg);border-radius:var(--radius-sm);padding:5px 10px;font-size:10px;color:var(--muted);border:1px solid var(--border);}
+.cl-sum-item strong{color:var(--text);font-weight:700;}
+
+/* 주의사항 */
+.caution-wrap{margin-top:7px;display:flex;flex-wrap:wrap;gap:3px;}
+.caution-tag{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A;border-radius:4px;padding:1px 7px;font-size:9px;}
+
+/* ── DB 탭 ── */
+.db-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;}
+.db-toolbar h2{font-size:15px;font-weight:700;color:var(--text);}
+.db-opts{display:flex;align-items:center;gap:10px;font-size:11px;flex-wrap:wrap;}
+.db-opts label{display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--muted);}
+.db-opts input{accent-color:var(--teal);}
+.db-wrap{overflow:auto;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead th{background:var(--navy);color:#fff;padding:8px 9px;text-align:center;white-space:nowrap;position:sticky;top:0;z-index:10;font-weight:600;}
+tbody tr{border-bottom:1px solid var(--border);}
+tbody tr:hover{background:#F0F9FF;}
+tbody tr.row-done{opacity:.45;background:var(--stripe);}
+tbody tr.row-filter{background:var(--filter-lt);}
+tbody tr.row-skip{opacity:.35;background:#F9FAFB;}
+tbody td{padding:6px 9px;vertical-align:middle;}
+.td-no{text-align:center;color:var(--muted);width:28px;font-size:10px;}
+.td-name{font-weight:700;}
+.td-c{text-align:center;}
+.td-lg{color:var(--danger);font-weight:700;text-align:center;}
+.td-md{color:var(--warn);font-weight:700;text-align:center;}
+.td-sm{color:var(--ok);font-weight:700;text-align:center;}
+.td-time{font-size:10px;color:#2563EB;}
+.td-note{font-size:10px;color:var(--muted);}
+.td-filter{font-size:10px;color:var(--filter);font-weight:600;text-align:center;}
+
+/* ── 모달 ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:14px;padding:22px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.form-group label{font-size:10px;font-weight:700;color:var(--muted);}
+.form-group select,.form-group input{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;outline:none;background:var(--bg);color:var(--text);}
+.form-group select:focus,.form-group input:focus{border-color:var(--teal);background:#fff;}
+.form-row{display:flex;gap:8px;}
+.form-row .form-group{flex:1;}
+.modal-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:14px;}
+.modal-btn{padding:8px 18px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:12px;font-weight:600;transition:.15s;}
+.modal-btn:hover{opacity:.85;}
+.modal-btn-cancel{background:var(--bg);color:var(--text);border:1.5px solid var(--border);}
+.modal-btn-ok{background:var(--teal);color:#fff;}
+
+/* 담당자 지정 모달 */
+.mgr-modal{background:var(--card);border-radius:14px;padding:20px;width:340px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.mgr-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px;}
+.mgr-option{padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);cursor:pointer;text-align:center;font-size:12px;font-weight:600;color:var(--muted);transition:.15s;background:var(--bg);}
+.mgr-option:hover{border-color:var(--border2);}
+.mgr-option.sel-kim{background:var(--kim);color:#fff;border-color:var(--kim);}
+.mgr-option.sel-baek{background:var(--baek);color:#fff;border-color:var(--baek);}
+.mgr-option.sel-noh{background:var(--noh);color:#fff;border-color:var(--noh);}
+.mgr-option.sel-kwak{background:var(--kwak);color:#fff;border-color:var(--kwak);}
+.mgr-option.sel-etc{background:var(--etc);color:#fff;border-color:var(--etc);}
+.mgr-option.sel-unmgr{background:#FEF9C3;color:#854D0E;border-color:#FCD34D;}
+
+/* 토스트 */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:600;opacity:0;transition:all .25s;z-index:999;pointer-events:none;box-shadow:var(--shadow-md);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.t-warn{background:var(--danger);}
+.toast.t-filter{background:var(--filter);}
+.toast.t-ok{background:var(--ok);}
+
+
+/* 공유 모달 */
+.share-opt-btn{padding:5px 12px;border-radius:16px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--muted);transition:.15s;}
+.share-opt-btn:hover{border-color:var(--border2);}
+.share-opt-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+/* 인쇄 스타일 */
+@media print{
+  body>*:not(#printArea){display:none!important;}
+  #printArea{display:block!important;padding:20px;}
+  .print-page{page-break-after:always;}
+  .print-page:last-child{page-break-after:auto;}
+}
+.filter-check-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:4px;
+  background:#FEF08A;color:#854D0E;font-size:11px;
+  cursor:pointer;flex-shrink:0;border:1px solid #FDE047;
+  transition:.15s;
+}
+.filter-check-badge:hover{background:#FDE047;transform:scale(1.1);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo-mark">S</div>
+  <div>
+    <div class="logo-text">세진인포 <span>공기청정기</span></div>
+  </div>
+  <div class="topbar-div"></div>
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="topbar-actions">
+    <button class="tbtn tbtn-green" onclick="saveSchedule()" id="saveBtn">💾 저장</button>
+    <button class="tbtn tbtn-outline" onclick="saveLocal()" id="localSaveBtn" style="display:none;font-size:11px">📥 JSON백업</button>
+    <label class="tbtn tbtn-blue" style="cursor:pointer">📂 불러오기<input type="file" id="loadFile" accept=".json" onchange="loadSchedule(event)" style="display:none"></label>
+    <button class="tbtn tbtn-outline" id="gasLoadBtn" onclick="loadFromSheet()" style="display:none">☁️ 시트불러오기</button>
+    <button class="tbtn tbtn-outline" id="gasPingBtn" onclick="pingSheet()" style="display:none;font-size:10px;">🔗 연결확인</button>
+    <button class="tbtn tbtn-outline" onclick="openShareModal()">📤 공유·인쇄</button>
+    <button class="tbtn tbtn-outline" onclick="openAddModal()">+ 추가</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('calendar',this)">📅 월별 스케줄</div>
+  <div class="tab" onclick="showTab('optimizer',this)">⚡ 최적 배정안</div>
+  <div class="tab" onclick="showTab('db',this)">🏫 학교 DB</div>
+</div>
+
+<div class="main">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <!-- 이달 현황 -->
+  <div class="sb-sec">
+    <div class="sb-label">이달 현황</div>
+    <div class="progress-box">
+      <div class="prog-row">
+        <span class="prog-label">🔵 점검</span>
+        <span class="prog-val" id="mpCheck">0 / 144</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill c-check" id="mpCheckFill" style="width:0%"></div></div>
+      <div class="prog-row">
+        <span class="prog-label">🟣 필터교체</span>
+        <span class="prog-val" id="mpFilter">0 / 0</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill c-filter" id="mpFilterFill" style="width:0%"></div></div>
+      <div class="prog-row">
+        <span class="prog-label">총 점검 대수</span>
+        <span class="prog-val" id="mpUnits">0대</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 담당자 -->
+  <div class="sb-sec">
+    <div class="sb-label">담당자 필터</div>
+    <div class="mgr-chips" id="mgrChips"></div>
+  </div>
+
+  <!-- 거래처 검색 -->
+  <div class="sb-sec">
+    <div class="sb-label">거래처 검색</div>
+    <div class="search-wrap">
+      <input class="search-input" type="text" id="searchInput" placeholder="학교명·지역·모델 검색..." oninput="onSearch()">
+      <span class="search-x" id="searchX" onclick="clearSearch()">✕</span>
+    </div>
+    <div class="opt-row" style="margin-top:6px">
+      <label class="opt-check"><input type="checkbox" id="hideAssigned" onchange="renderList()"> 배정완료 숨기기</label>
+      <label class="opt-check filter-opt"><input type="checkbox" id="filterOnly" onchange="renderList()"> 이달 필터교체만 보기</label>
+    </div>
+    <div class="hint">💡 카드를 날짜로 드래그하여 배정</div>
+  </div>
+
+  <!-- 클러스터(지역) -->
+  <div class="sb-sec">
+    <div class="sb-label">지역별 클러스터</div>
+    <div class="cl-chips" id="clChips"></div>
+  </div>
+
+  <div class="list-meta">
+    <span id="listCount"></span>
+    <span id="listUnassigned" style="color:var(--ok);font-weight:600"></span>
+  </div>
+  <div class="school-list" id="schoolList"></div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- 캘린더 페이지 -->
+  <div id="page-calendar">
+    <div class="month-summary" id="monthSummary"></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;padding:7px 10px;background:#FFFBEB;border-radius:8px;border:1px solid #FDE68A;font-size:11px;color:#92400E;">
+      <span>📌 <strong>사용법:</strong></span>
+      <span>① 왼쪽 학교 카드 드래그 → 날짜 칸에 놓기</span>
+      <span>② 배정 후 <strong style="background:#FEF9C3;padding:1px 5px;border-radius:4px;border:1px dashed #FCD34D">👤 담당자지정</strong> 클릭 → 담당자 선택</span>
+      <span>③ 이미 지정된 담당자 <strong>클릭</strong> → 변경 가능</span>
+    </div>
+    <div class="cal-hd">
+      <div class="cal-hd-cell">월요일</div><div class="cal-hd-cell">화요일</div>
+      <div class="cal-hd-cell">수요일</div><div class="cal-hd-cell">목요일</div>
+      <div class="cal-hd-cell">금요일</div>
+    </div>
+    <div class="cal-grid" id="weekGrid"></div>
+  </div>
+
+  <!-- 최적배정 페이지 -->
+  <div id="page-optimizer" style="display:none">
+    <div class="opt-header">
+      <h2>⚡ 지역별 최적 배정안</h2>
+      <div class="opt-mode-btns">
+        <button class="opt-mode-btn m-check" id="optModeCheck" onclick="setOptMode('check')">🔵 점검 일정</button>
+        <button class="opt-mode-btn" id="optModeFilter" onclick="setOptMode('filter')">🟣 필터교체</button>
+      </div>
+    </div>
+    <div class="opt-mgr-btns" id="optMgrBtns"></div>
+    <div class="cl-cards" id="clCards"></div>
+  </div>
+
+  <!-- DB 페이지 -->
+  <div id="page-db" style="display:none">
+    <div class="db-toolbar">
+      <h2>🏫 학교 DB <span id="dbCount" style="font-size:11px;font-weight:400;color:var(--muted);margin-left:6px"></span></h2>
+      <div class="db-opts">
+        <label><input type="checkbox" id="dbHide" onchange="renderDB()"> 배정완료 숨기기</label>
+        <label style="color:var(--filter)"><input type="checkbox" id="dbFilterOnly" onchange="renderDB()"> 이달 필터교체만</label>
+      </div>
+    </div>
+    <div class="db-wrap">
+      <table><thead><tr>
+        <th>No</th><th>학교/기관명</th><th>지역</th><th>클러스터</th>
+        <th>담당자</th><th>총대수</th><th>교실</th><th>특별실</th>
+        <th>방문시간</th><th>점검제외월</th><th>필터교체월</th><th>이달</th><th>특이사항</th>
+      </tr></thead>
+      <tbody id="dbBody"></tbody></table>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- 일정 추가 모달 -->
+
+<!-- 공유·인쇄 모달 -->
+<div class="overlay" id="shareOverlay">
+  <div class="modal" style="width:520px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">📤 스케줄 공유 · 인쇄</div>
+
+    <!-- 옵션 선택 -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:2px;">출력 범위</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="share-opt-btn active" id="sopt-all" onclick="setShareOpt('all',this)">전체 월</button>
+        <button class="share-opt-btn" id="sopt-mgr" onclick="setShareOpt('mgr',this)">담당자별</button>
+        <button class="share-opt-btn" id="sopt-cluster" onclick="setShareOpt('cluster',this)">클러스터별</button>
+      </div>
+
+      <div id="sopt-mgr-sel" style="display:none;margin-top:4px;">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">담당자 선택</div>
+        <div id="share-mgr-btns" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+      </div>
+      <div id="sopt-cluster-sel" style="display:none;margin-top:4px;">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">클러스터 선택</div>
+        <select id="share-cluster-sel" style="width:100%;padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"></select>
+      </div>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;color:var(--muted)">
+          <input type="checkbox" id="shareShowNote" checked> 방문시간·특이사항 포함
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;color:var(--filter)">
+          <input type="checkbox" id="shareShowFilter" checked> 필터교체 포함
+        </label>
+      </div>
+    </div>
+
+    <!-- 미리보기 -->
+    <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;">미리보기</div>
+    <div id="sharePreview" style="border:1.5px solid var(--border);border-radius:8px;padding:12px;background:#fafbfc;max-height:320px;overflow-y:auto;font-size:11px;line-height:1.6;"></div>
+
+    <div class="modal-actions" style="margin-top:12px;">
+      <button class="modal-btn modal-btn-cancel" onclick="closeShareModal()">닫기</button>
+      <button class="modal-btn" style="background:#6B7280;color:#fff;" onclick="copyShareText()">📋 텍스트 복사</button>
+      <button class="modal-btn" style="background:#2563EB;color:#fff;" onclick="shareKakao()">💬 카카오 공유</button>
+      <button class="modal-btn modal-btn-ok" onclick="printSchedule()">🖨️ 인쇄</button>
+    </div>
+  </div>
+</div>
+
+<!-- 인쇄용 레이아웃 -->
+<div id="printArea" style="display:none;"></div>
+
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <div class="modal-title">✏️ 일정 추가</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>날짜</label>
+        <input type="date" id="mDate">
+      </div>
+      <div class="form-group">
+        <label>종류</label>
+        <select id="mType">
+          <option value="check">🔵 점검</option>
+          <option value="filter">🟣 필터교체</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>담당자</label>
+        <select id="mMgr">
+          <option value="">-- 미지정 --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>시간대</label>
+        <select id="mTime">
+          <option value="morning">🌅 오전(특별실)</option>
+          <option value="lunch">🍱 점심(교실)</option>
+          <option value="afternoon">🌆 오후(방과후)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>학교/기관</label>
+      <select id="mSchool"></select>
+    </div>
+    <div class="form-group">
+      <label>메모</label>
+      <input type="text" id="mNote" placeholder="특이사항...">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeAddModal()">취소</button>
+      <button class="modal-btn modal-btn-ok" onclick="submitAdd()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- 담당자 지정 모달 -->
+<div class="overlay" id="mgrOverlay">
+  <div class="mgr-modal">
+    <div class="modal-title">👤 담당자 지정</div>
+    <div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:4px" id="mgrTargetName"></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">변경: 현재 담당자 교체 / 추가: 같은 학교에 담당자 한 명 더 배정</div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">담당자 선택</div>
+    <div class="mgr-grid" id="mgrGrid"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+      <button class="modal-btn" style="flex:1;background:var(--teal);color:#fff;" onclick="assignMgr('change')">✏️ 변경</button>
+      <button class="modal-btn" style="flex:1;background:var(--ok);color:#fff;" onclick="assignMgr('add')">➕ 추가 배정</button>
+      <button class="modal-btn modal-btn-cancel" onclick="closeMgrModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby1I9fzwH9ip6eFPislZBJdSByDoQBI7KrR2uD0akSXbcEuvfjcfCKaN0MoxvcKDaQShw/exec';
+
+const SCHOOLS = [{"id": 1, "name": "빛가온초", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 17, "classroom": 0, "special": 17, "model": "위닉스", "days": "월화수목금", "timeNote": "N/A", "note": "특별실 전용, 9시이전 방문", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 2, "name": "철산중", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 2, "classroom": 0, "special": 2, "model": "위닉스", "days": "월화수목금", "timeNote": "N/A", "note": "특별실 전용, 10~11시", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 3, "name": "광명광성초", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 45, "classroom": 25, "special": 20, "model": "위닉스", "days": "월화수목금", "timeNote": "오후(점심후)", "note": "오후 특별실→일반실 순서", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 4, "name": "광문초", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 12, "classroom": 0, "special": 12, "model": "위닉스", "days": "월화수목금", "timeNote": "N/A", "note": "특별실 전용", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 5, "name": "광일초", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 46, "classroom": 24, "special": 22, "model": "위닉스", "days": "월화수목금", "timeNote": "학급점심이후", "note": "학급점심 확인 필요", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 6, "name": "광휘고", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 50, "classroom": 30, "special": 20, "model": "위닉스", "days": "월화수목금", "timeNote": "점심(12:50~13:50)", "note": "3명 필요", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 7, "name": "창의경영고", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 31, "classroom": 24, "special": 7, "model": "위닉스", "days": "월화수목금", "timeNote": "점심(12:50~13:50)", "note": "9시전 방문, 3명 필요", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 8, "name": "하안초", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 36, "classroom": 16, "special": 20, "model": "위닉스", "days": "월화수목금", "timeNote": "오후(점심후)", "note": "직통번호 확인", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 9, "name": "하안북초", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 33, "classroom": 12, "special": 21, "model": "위닉스", "days": "월화수목금", "timeNote": "오후(점심후)", "note": "오후 특별→일반 순서", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 10, "name": "온신초", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 10, "classroom": 6, "special": 4, "model": "위닉스", "days": "월화수목금", "timeNote": "14~16시", "note": "14시이후 방문 요청", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 11, "name": "하안남초", "region": "광명", "manager": "백형주", "cluster": "광명서부", "total": 14, "classroom": 0, "special": 14, "model": "위닉스", "days": "월화수목금", "timeNote": "N/A", "note": "특별실 전용", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 12, "name": "광남중", "region": "광명", "manager": "노경민", "cluster": "광명서부", "total": 34, "classroom": 26, "special": 8, "model": "위닉스", "days": "월수금", "timeNote": "15:10이후", "note": "월수금 15시10분", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 13, "name": "진성고", "region": "광명", "manager": "김보현", "cluster": "광명서부", "total": 28, "classroom": 27, "special": 1, "model": "위닉스", "days": "월수금", "timeNote": "오후 15:30~", "note": "월수금 15:30", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 14, "name": "안현초", "region": "광명", "manager": "백형주", "cluster": "광명서부", "total": 46, "classroom": 0, "special": 46, "model": "큐브", "days": "화목금", "timeNote": "N/A", "note": "수요일 불가", "skipMonths": "1/8월제외", "filterMonths": "2/7월", "status": "운영중"}, {"id": 15, "name": "부흥고", "region": "안양", "manager": "김보현", "cluster": "안양북부", "total": 41, "classroom": 41, "special": 0, "model": "DK벽", "days": "월화수목금", "timeNote": "점심(12시~13시)", "note": "사진 필수, 1,2G 13시/ 3G 12시", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 16, "name": "안양부흥중", "region": "안양", "manager": "김보현", "cluster": "안양북부", "total": 52, "classroom": 35, "special": 17, "model": "한새", "days": "월수금", "timeNote": "오후(점심후)", "note": "월수금 운영", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 17, "name": "안양고", "region": "안양", "manager": "김보현", "cluster": "안양북부", "total": 65, "classroom": 29, "special": 36, "model": "삼성벽+삼성스+D벽+휴", "days": "월화수목금", "timeNote": "오후", "note": "삼벽27+삼스28+D벽8+휴2", "skipMonths": "없음", "filterMonths": "6/12월", "status": "운영중"}, {"id": 18, "name": "안양서중", "region": "안양", "manager": "김보현", "cluster": "안양북부", "total": 20, "classroom": 9, "special": 11, "model": "시헌+삼성UV+휴", "days": "월화수목금", "timeNote": "8시~", "note": "8시 방문 가능", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 25, "name": "해오름초", "region": "안양", "manager": "노경민", "cluster": "안양북부", "total": 12, "classroom": 0, "special": 12, "model": "시헌", "days": "월화수목금", "timeNote": "오전", "note": "특별실", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 32, "name": "성문고", "region": "안양", "manager": "백형주", "cluster": "안양북부", "total": 30, "classroom": 30, "special": 0, "model": "한새", "days": "월화수목금", "timeNote": "", "note": "", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 33, "name": "인덕원초", "region": "안양", "manager": "백형주", "cluster": "안양북부", "total": 18, "classroom": 0, "special": 18, "model": "큐브", "days": "월화수목금", "timeNote": "오전", "note": "특별실 전용", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 34, "name": "안양동초", "region": "안양", "manager": "백형주", "cluster": "안양북부", "total": 17, "classroom": 16, "special": 1, "model": "큐브+142N", "days": "월화수목금", "timeNote": "N/A", "note": "", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 41, "name": "부안중", "region": "안양", "manager": "백형주", "cluster": "안양북부", "total": 2, "classroom": 0, "special": 2, "model": "큐브", "days": "월화수목금", "timeNote": "오전", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 42, "name": "부림중", "region": "안양", "manager": "백형주", "cluster": "안양북부", "total": 2, "classroom": 0, "special": 2, "model": "큐브", "days": "월화수목금", "timeNote": "오전", "note": "", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 19, "name": "평촌경영고", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 72, "classroom": 41, "special": 31, "model": "벽+큐브+50N+시스템", "days": "월수", "timeNote": "15:40이후", "note": "월수 15시40분 이후", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 20, "name": "근명고", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 64, "classroom": 25, "special": 39, "model": "시헌", "days": "월화수목금", "timeNote": "오전~", "note": "전날 문자 필수", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 21, "name": "대안중", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 20, "classroom": 0, "special": 20, "model": "시헌", "days": "월화수목금", "timeNote": "점심(12:40~13:30)", "note": "특별실, 점심시간 엄수", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 22, "name": "대안여중", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 43, "classroom": 20, "special": 23, "model": "시헌", "days": "월수금", "timeNote": "오후 14:20~", "note": "특→일 순서 준수", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 23, "name": "신안초", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 58, "classroom": 17, "special": 41, "model": "시헌+한새", "days": "수", "timeNote": "13:40~17:00", "note": "수요일 고정, 17시이전 완료", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 24, "name": "관양초", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 14, "classroom": 14, "special": 0, "model": "큐브", "days": "월화수목금", "timeNote": "14시이후", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "5/10월", "status": "운영중"}, {"id": 26, "name": "동안초", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 42, "classroom": 2, "special": 40, "model": "큐브+60N", "days": "수", "timeNote": "13:30~", "note": "수요일 13시30분", "skipMonths": "1/8월제외", "filterMonths": "9월", "status": "운영중"}, {"id": 27, "name": "백영고", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 36, "classroom": 36, "special": 0, "model": "한새", "days": "월화수목금", "timeNote": "16:30~", "note": "", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 28, "name": "과천외고", "region": "과천", "manager": "김보현", "cluster": "과천군포", "total": 34, "classroom": 0, "special": 34, "model": "큐브", "days": "월화수목금", "timeNote": "N/A", "note": "특별실 전용", "skipMonths": "1/8월제외", "filterMonths": "5/10월", "status": "운영중"}, {"id": 29, "name": "과천문원중", "region": "과천", "manager": "김보현", "cluster": "과천군포", "total": 68, "classroom": 66, "special": 2, "model": "큐브+벽", "days": "월화금", "timeNote": "14:20~", "note": "월화금 14시20분", "skipMonths": "1/2월제외", "filterMonths": "6/12월", "status": "운영중"}, {"id": 30, "name": "과천중", "region": "과천", "manager": "김보현", "cluster": "과천군포", "total": 4, "classroom": 4, "special": 0, "model": "시헌", "days": "월화수목금", "timeNote": "점심(12:35~13:25)", "note": "점심시간 엄수", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 31, "name": "과천고", "region": "과천", "manager": "김보현", "cluster": "과천군포", "total": 53, "classroom": 24, "special": 29, "model": "시헌", "days": "목", "timeNote": "15:20~", "note": "목요일 고정", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 35, "name": "삼봉초", "region": "안양", "manager": "백형주", "cluster": "안양중부", "total": 64, "classroom": 17, "special": 47, "model": "벽+큐브+D벽", "days": "월화수목금", "timeNote": "오후", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "7/2월", "status": "운영중"}, {"id": 36, "name": "안양신기초", "region": "안양", "manager": "백형주", "cluster": "안양중부", "total": 8, "classroom": 0, "special": 8, "model": "큐브", "days": "월화수목금", "timeNote": "9시~", "note": "특별실, 사진 필수", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 37, "name": "평촌과학기술고", "region": "안양", "manager": "백형주", "cluster": "안양중부", "total": 5, "classroom": 0, "special": 5, "model": "큐브", "days": "월화수목금", "timeNote": "10시~", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "7월", "status": "운영중"}, {"id": 38, "name": "민백초", "region": "안양", "manager": "백형주", "cluster": "안양중부", "total": 13, "classroom": 0, "special": 13, "model": "시헌", "days": "월화수목금", "timeNote": "11시~", "note": "특별실, 오전시간 체크", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 39, "name": "귀인초", "region": "안양", "manager": "백형주", "cluster": "안양중부", "total": 53, "classroom": 29, "special": 24, "model": "교원", "days": "수", "timeNote": "13:30 / 그외14:30", "note": "수 13:30, 수 외 14:30", "skipMonths": "1/8월제외", "filterMonths": "7월", "status": "운영중"}, {"id": 40, "name": "덕천초", "region": "안양", "manager": "백형주", "cluster": "안양중부", "total": 57, "classroom": 31, "special": 26, "model": "시헌+삼성", "days": "월화수목금", "timeNote": "오후(점심후)", "note": "특→일 순서", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 43, "name": "게임마이스터고", "region": "안양", "manager": "백형주", "cluster": "안양중부", "total": 10, "classroom": 0, "special": 10, "model": "시헌", "days": "월화수목금", "timeNote": "오전", "note": "", "skipMonths": "1/8월제외", "filterMonths": "2/9월", "status": "운영중"}, {"id": 44, "name": "과천여고", "region": "과천", "manager": "백형주", "cluster": "과천군포", "total": 37, "classroom": 10, "special": 27, "model": "큐브", "days": "월화수목금", "timeNote": "9시~", "note": "", "skipMonths": "없음", "filterMonths": "5/11월", "status": "운영중"}, {"id": 45, "name": "상현고", "region": "용인", "manager": "백형주", "cluster": "용인", "total": 31, "classroom": 0, "special": 31, "model": "벽", "days": "수목", "timeNote": "15:50이후", "note": "수목 15시50분", "skipMonths": "1/8월제외", "filterMonths": "5/11월", "status": "운영중"}, {"id": 46, "name": "상갈중", "region": "용인", "manager": "백형주", "cluster": "용인", "total": 12, "classroom": 0, "special": 12, "model": "큐브", "days": "월화수목금", "timeNote": "N/A", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "5/11월", "status": "운영중"}, {"id": 47, "name": "수지누리유치원", "region": "용인", "manager": "백형주", "cluster": "용인", "total": 13, "classroom": 0, "special": 13, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "7/2월", "status": "운영중"}, {"id": 48, "name": "용인신릉중", "region": "용인", "manager": "백형주", "cluster": "용인", "total": 26, "classroom": 23, "special": 3, "model": "S벽+D벽+LG", "days": "수금", "timeNote": "15시~", "note": "수금 15시, 사진 필수", "skipMonths": "1/8월제외", "filterMonths": "5/11월", "status": "운영중"}, {"id": 49, "name": "고림중", "region": "용인", "manager": "노경민", "cluster": "용인", "total": 48, "classroom": 0, "special": 48, "model": "복합", "days": "월수금", "timeNote": "15:10이후", "note": "사진 필수, 월수금", "skipMonths": "없음", "filterMonths": "4/11월", "status": "운영중"}, {"id": 50, "name": "흥덕고", "region": "용인", "manager": "백형주", "cluster": "용인", "total": 59, "classroom": 0, "special": 59, "model": "복합", "days": "월화수목금", "timeNote": "15:30이후", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "6/11월", "status": "운영중"}, {"id": 51, "name": "경기중앙도서관", "region": "수원", "manager": "백형주", "cluster": "수원", "total": 21, "classroom": 0, "special": 21, "model": "50N+60R+큐브", "days": "월화수목금", "timeNote": "N/A", "note": "특별실 전용, 12~13시 방문불가", "skipMonths": "없음", "filterMonths": "1월", "status": "운영중"}, {"id": 52, "name": "곡정고", "region": "수원", "manager": "백형주", "cluster": "수원", "total": 10, "classroom": 5, "special": 5, "model": "큐브+80N", "days": "월화수목금", "timeNote": "12~13시 제외", "note": "별도안내 없음", "skipMonths": "1/8월제외", "filterMonths": "4/10월", "status": "운영중"}, {"id": 53, "name": "인천첨단초", "region": "인천", "manager": "백형주", "cluster": "인천", "total": 63, "classroom": 55, "special": 7, "model": "S벽+142N", "days": "월화수목금", "timeNote": "오후", "note": "사진 필수", "skipMonths": "1/8월제외", "filterMonths": "5/11월", "status": "운영중"}, {"id": 54, "name": "호원고", "region": "의정부", "manager": "백형주", "cluster": "의정부북부", "total": 49, "classroom": 36, "special": 13, "model": "삼성벽+캐리어", "days": "수", "timeNote": "14:50~", "note": "수요일 14:50", "skipMonths": "1/2월제외", "filterMonths": "7/12월", "status": "운영중"}, {"id": 55, "name": "성남여수초", "region": "성남", "manager": "노경민", "cluster": "성남광주권", "total": 10, "classroom": 0, "special": 10, "model": "큐브", "days": "월화수목금", "timeNote": "오전", "note": "", "skipMonths": "없음", "filterMonths": "8/2월", "status": "운영중"}, {"id": 56, "name": "도예고", "region": "이천", "manager": "백형주", "cluster": "이천여주", "total": 9, "classroom": 0, "special": 9, "model": "교원+54R", "days": "월화수목금", "timeNote": "N/A", "note": "청구 필수, ", "skipMonths": "1/8월제외", "filterMonths": "", "status": "운영중"}, {"id": 57, "name": "물빛유치원", "region": "김포", "manager": "백형주", "cluster": "부천김포", "total": 22, "classroom": 0, "special": 22, "model": "휴앤텍", "days": "월화수목금", "timeNote": "N/A", "note": "설치현황 지참", "skipMonths": "1/8월제외", "filterMonths": "7/2월", "status": "운영중"}, {"id": 59, "name": "효명중", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 18, "classroom": 18, "special": 0, "model": "DK벽", "days": "월화수목금", "timeNote": "15:30이후", "note": "필터교체 필요", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 60, "name": "청담중", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 18, "classroom": 12, "special": 6, "model": "시헌", "days": "월화수목금", "timeNote": "9시이전", "note": "9시이전 방문", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 61, "name": "송신초", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 23, "classroom": 0, "special": 23, "model": "교원", "days": "월화수목금", "timeNote": "9시~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 62, "name": "송일초", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 3, "classroom": 1, "special": 2, "model": "시헌", "days": "월화수목금", "timeNote": "쉬는시간", "note": "과학실무사 방문", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 63, "name": "복창초", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 17, "classroom": 10, "special": 7, "model": "큐브", "days": "월화수목금", "timeNote": "13:30~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 64, "name": "라온고", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 31, "classroom": 20, "special": 11, "model": "교원", "days": "월화수목금", "timeNote": "16:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 65, "name": "라온중", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 25, "classroom": 17, "special": 8, "model": "한새", "days": "월수금", "timeNote": "14:50~", "note": "월수금 6교시", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 66, "name": "평택지산초", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 29, "classroom": 16, "special": 13, "model": "교원", "days": "월화수목금", "timeNote": "14:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 67, "name": "은혜중", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 18, "classroom": 16, "special": 2, "model": "교원", "days": "월수금", "timeNote": "15:00~", "note": "월수금 6교시", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 68, "name": "이충고", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 32, "classroom": 10, "special": 22, "model": "복합", "days": "월화수목금", "timeNote": "13:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 69, "name": "진위초산대분교", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 10, "classroom": 0, "special": 10, "model": "시헌", "days": "월화수목금", "timeNote": "12:00", "note": "시간 엄수", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 70, "name": "진위초", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 28, "classroom": 0, "special": 28, "model": "시헌", "days": "월화수목금", "timeNote": "14:30~", "note": "시간 엄수", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 71, "name": "태광중", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 20, "classroom": 19, "special": 1, "model": "시헌", "days": "월화수목금", "timeNote": "11:45~", "note": "점심시간", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 72, "name": "태광고", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 30, "classroom": 30, "special": 0, "model": "시헌", "days": "월화수목금", "timeNote": "12:50~", "note": "점심시간", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 73, "name": "오성초", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 13, "classroom": 8, "special": 5, "model": "시헌", "days": "월화수목금", "timeNote": "8:00~", "note": "이른 방문", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 76, "name": "청아초", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 40, "classroom": 35, "special": 5, "model": "시헌", "days": "월화수목금", "timeNote": "13:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 58, "name": "부용초", "region": "평택", "manager": "백형주", "cluster": "평택서부", "total": 38, "classroom": 15, "special": 23, "model": "교원+삼성60N", "days": "월화수목금", "timeNote": "13:00이후", "note": "", "skipMonths": "1/2월제외", "filterMonths": "4/8월", "status": "운영중"}, {"id": 74, "name": "가사초", "region": "평택", "manager": "김보현", "cluster": "평택서부", "total": 5, "classroom": 0, "special": 5, "model": "시헌", "days": "월화수목금", "timeNote": "9:30~", "note": "특별실", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 75, "name": "안일중", "region": "평택", "manager": "백형주", "cluster": "평택서부", "total": 14, "classroom": 0, "special": 14, "model": "한새", "days": "월화수목금", "timeNote": "10:30~", "note": "특별실", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 77, "name": "용죽초", "region": "평택", "manager": "김보현", "cluster": "평택서부", "total": 15, "classroom": 0, "special": 15, "model": "삼성벽", "days": "월화수목금", "timeNote": "N/A", "note": "특별실", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 78, "name": "안중고", "region": "평택", "manager": "김보현", "cluster": "평택서부", "total": 23, "classroom": 23, "special": 0, "model": "삼성벽", "days": "월화수목금", "timeNote": "11:50~12:40", "note": "점심시간", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 79, "name": "안중초", "region": "평택", "manager": "백형주", "cluster": "평택서부", "total": 35, "classroom": 13, "special": 22, "model": "삼성큐브", "days": "월화수목금", "timeNote": "13:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8월", "status": "운영중"}, {"id": 86, "name": "청북초", "region": "평택", "manager": "김보현", "cluster": "평택서부", "total": 5, "classroom": 0, "special": 5, "model": "삼성벽/엘지", "days": "월화수목금", "timeNote": "9:40~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 80, "name": "신한중", "region": "평택", "manager": "곽덕순", "cluster": "평택2구역", "total": 27, "classroom": 26, "special": 1, "model": "시헌", "days": "월화수목금", "timeNote": "15:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 81, "name": "평택안일초", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 29, "classroom": 6, "special": 23, "model": "교원", "days": "월화수목금", "timeNote": "12:00~", "note": "필터교체", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 82, "name": "세교초", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 40, "classroom": 24, "special": 16, "model": "시헌", "days": "월화수목금", "timeNote": "12~13시/14:30~", "note": "점심or수업후", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 83, "name": "청담고", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 35, "classroom": 24, "special": 11, "model": "시헌", "days": "월화수목금", "timeNote": "7:00~", "note": "이른방문", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 84, "name": "평택송화초", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 14, "classroom": 0, "special": 14, "model": "시헌", "days": "월화수목금", "timeNote": "9:00~", "note": "4대 행정실 오픈", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 85, "name": "합정초", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 8, "classroom": 0, "special": 8, "model": "한새", "days": "월화수목금", "timeNote": "10:30~", "note": "특별실", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 87, "name": "평택도곡초", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 2, "classroom": 0, "special": 2, "model": "큐브", "days": "월화수목금", "timeNote": "점심", "note": "", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 88, "name": "소사벌초", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 10, "classroom": 0, "special": 10, "model": "교원", "days": "월화수목금", "timeNote": "오전", "note": "필터교체", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 89, "name": "군문유", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 1, "classroom": 0, "special": 1, "model": "시헌", "days": "월화수목금", "timeNote": "12시이후", "note": "점심이후 엄수", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 90, "name": "덕동초", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 8, "classroom": 0, "special": 8, "model": "시헌+교원+엘지", "days": "월화수목금", "timeNote": "9:30~", "note": "교원/엘지 필터 확인", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 91, "name": "자란초", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 2, "classroom": 0, "special": 2, "model": "시헌", "days": "월화수목금", "timeNote": "10:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 92, "name": "평택이화초", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 2, "classroom": 0, "special": 2, "model": "시헌", "days": "월화수목금", "timeNote": "9:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 93, "name": "배다리초", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 2, "classroom": 1, "special": 1, "model": "삼성벽+50N", "days": "월화수목금", "timeNote": "8:40~", "note": "교장/미화원실", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 94, "name": "세교중", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 1, "classroom": 0, "special": 1, "model": "교원", "days": "월화수목금", "timeNote": "11:00~", "note": "필터교체", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 95, "name": "평택중앙초", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 4, "classroom": 0, "special": 4, "model": "교원", "days": "월화수목금", "timeNote": "10:30~", "note": "필터교체", "skipMonths": "1/2월제외", "filterMonths": "3/8월", "status": "운영중"}, {"id": 96, "name": "용이중", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 5, "classroom": 0, "special": 5, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8월", "status": "운영중"}, {"id": 97, "name": "죽백초", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 19, "classroom": 13, "special": 6, "model": "시헌", "days": "월화수목금", "timeNote": "1:00~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 98, "name": "효덕초", "region": "평택", "manager": "김보현", "cluster": "평택중부", "total": 7, "classroom": 0, "special": 7, "model": "시헌", "days": "월화수목금", "timeNote": "", "note": "", "skipMonths": "1/2월제외", "filterMonths": "8/3월", "status": "운영중"}, {"id": 99, "name": "성동구", "region": "성동구", "manager": "김보현", "cluster": "서울(성동구)", "total": 238, "classroom": 0, "special": 238, "model": "삼성", "days": "월화수목금", "timeNote": "", "note": "", "skipMonths": "없음", "filterMonths": "4월", "status": "운영중"}, {"id": 100, "name": "성동구", "region": "성동구", "manager": "김보현", "cluster": "서울(성동구)", "total": 21, "classroom": 0, "special": 21, "model": "삼성", "days": "월화수목금", "timeNote": "", "note": "", "skipMonths": "없음", "filterMonths": "6월", "status": "운영중"}, {"id": 101, "name": "인천평생학습관", "region": "인천", "manager": "김보현", "cluster": "인천", "total": 53, "classroom": 0, "special": 53, "model": "복합", "days": "월화수목금", "timeNote": "9시~", "note": "", "skipMonths": "1/2월제외", "filterMonths": "6월", "status": "운영중"}, {"id": 102, "name": "인천교육청학생교육원", "region": "인천", "manager": "김보현", "cluster": "인천", "total": 29, "classroom": 0, "special": 29, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "특별실", "skipMonths": "1/2월제외", "filterMonths": "6/12월", "status": "운영중"}, {"id": 103, "name": "파주율곡교육연수원", "region": "파주", "manager": "백형주", "cluster": "고양파주", "total": 9, "classroom": 0, "special": 9, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "", "skipMonths": "없음", "filterMonths": "9월", "status": "운영중"}, {"id": 104, "name": "의정부영어도서관", "region": "의정부", "manager": "김보현", "cluster": "의정부북부", "total": 8, "classroom": 0, "special": 8, "model": "복합", "days": "월화수목금", "timeNote": "9시이후", "note": "카드 지참", "skipMonths": "없음", "filterMonths": "6월", "status": "운영중"}, {"id": 105, "name": "부평구", "region": "인천", "manager": "백형주", "cluster": "인천", "total": 294, "classroom": 0, "special": 294, "model": "삼성", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "4월", "status": "운영중"}, {"id": 106, "name": "가축위생방역지역본부(세종)", "region": "세종", "manager": "백형주", "cluster": "가축대전권", "total": 2, "classroom": 0, "special": 2, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 107, "name": "가축위생방역지역본부(수원)", "region": "수원", "manager": "백형주", "cluster": "수원", "total": 1, "classroom": 0, "special": 1, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 108, "name": "가축위생방역지역본부(춘천)", "region": "춘천", "manager": "백형주", "cluster": "성남광주권", "total": 1, "classroom": 0, "special": 1, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 109, "name": "가축위생방역지역본부(청주)", "region": "청주", "manager": "백형주", "cluster": "가축대전권", "total": 1, "classroom": 0, "special": 1, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 110, "name": "가축위생방역지역본부(아산)", "region": "아산", "manager": "백형주", "cluster": "가축대전권", "total": 1, "classroom": 0, "special": 1, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 111, "name": "가축위생방역지역본부(전주)", "region": "전주", "manager": "백형주", "cluster": "가축남부", "total": 1, "classroom": 0, "special": 1, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 112, "name": "가축위생방역지역본부(광주)", "region": "광주", "manager": "백형주", "cluster": "가축남부", "total": 2, "classroom": 0, "special": 2, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 113, "name": "가축위생방역지역본부(대구)", "region": "대구", "manager": "백형주", "cluster": "가축남부", "total": 2, "classroom": 0, "special": 2, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 114, "name": "가축위생방역지역본부(창원)", "region": "창원", "manager": "백형주", "cluster": "가축남부", "total": 2, "classroom": 0, "special": 2, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 115, "name": "가축위생방역지역본부(제주)", "region": "제주", "manager": "백형주", "cluster": "가축남부", "total": 1, "classroom": 0, "special": 1, "model": "위닉스", "days": "월화수목금", "timeNote": "", "note": "기관", "skipMonths": "없음", "filterMonths": "12월", "status": "운영중"}, {"id": 116, "name": "경기신용보증재단(수원)", "region": "수원", "manager": "김보현", "cluster": "수원", "total": 50, "classroom": 0, "special": 50, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 117, "name": "경기신용보증재단(안양)", "region": "안양", "manager": "김보현", "cluster": "안양중부", "total": 8, "classroom": 0, "special": 8, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 118, "name": "경기신용보증재단(시흥)", "region": "시흥", "manager": "백형주", "cluster": "시흥", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 119, "name": "경기신용보증재단(부천)", "region": "부천", "manager": "백형주", "cluster": "부천김포", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 120, "name": "경기신용보증재단(안산)", "region": "안산", "manager": "백형주", "cluster": "수원", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 121, "name": "경기신용보증재단(군포)", "region": "군포", "manager": "백형주", "cluster": "과천군포", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 122, "name": "경기신용보증재단(광명)", "region": "광명", "manager": "백형주", "cluster": "광명서부", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 123, "name": "경기신용보증재단(화성)", "region": "화성", "manager": "백형주", "cluster": "화성동탄오산", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 124, "name": "경기신용보증재단(동탄)", "region": "동탄", "manager": "백형주", "cluster": "화성동탄오산", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 125, "name": "경기신용보증재단(오산)", "region": "오산", "manager": "백형주", "cluster": "화성동탄오산", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 126, "name": "경기신용보증재단(용인)", "region": "용인", "manager": "백형주", "cluster": "용인", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 127, "name": "경기신용보증재단(평택)", "region": "평택", "manager": "백형주", "cluster": "평택중부", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 128, "name": "경기신용보증재단(안성)", "region": "안성", "manager": "백형주", "cluster": "용인", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 129, "name": "경기신용보증재단(성남)", "region": "성남", "manager": "백형주", "cluster": "성남광주권", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 130, "name": "경기신용보증재단(광주)", "region": "광주", "manager": "김보현", "cluster": "성남광주권", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 131, "name": "경기신용보증재단(하남)", "region": "하남", "manager": "김보현", "cluster": "성남광주권", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 132, "name": "경기신용보증재단(구리)", "region": "구리", "manager": "김보현", "cluster": "성남광주권", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 133, "name": "경기신용보증재단(가평양평)", "region": "가평양평", "manager": "김보현", "cluster": "성남광주권", "total": 2, "classroom": 0, "special": 2, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 134, "name": "경기신용보증재단(남양주)", "region": "남양주", "manager": "김보현", "cluster": "성남광주권", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 135, "name": "경기신용보증재단(이천)", "region": "이천", "manager": "김보현", "cluster": "이천여주", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 136, "name": "경기신용보증재단(여주)", "region": "여주", "manager": "김보현", "cluster": "이천여주", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 137, "name": "경기신용보증재단(의정부)", "region": "의정부", "manager": "김보현", "cluster": "의정부북부", "total": 6, "classroom": 0, "special": 6, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 138, "name": "경기신용보증재단(고양)", "region": "고양", "manager": "백형주", "cluster": "고양파주", "total": 7, "classroom": 0, "special": 7, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 139, "name": "경기신용보증재단(김포)", "region": "김포", "manager": "김보현", "cluster": "부천김포", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 140, "name": "경기신용보증재단(포천)", "region": "포천", "manager": "김보현", "cluster": "의정부북부", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 141, "name": "경기신용보증재단(파주)", "region": "파주", "manager": "김보현", "cluster": "고양파주", "total": 4, "classroom": 0, "special": 4, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 142, "name": "경기신용보증재단(양주)", "region": "양주", "manager": "김보현", "cluster": "성남광주권", "total": 3, "classroom": 0, "special": 3, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 143, "name": "경기신용보증재단(연천)", "region": "연천", "manager": "김보현", "cluster": "의정부북부", "total": 1, "classroom": 0, "special": 1, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}, {"id": 144, "name": "경기신용보증재단(동두천)", "region": "동두천", "manager": "김보현", "cluster": "의정부북부", "total": 1, "classroom": 0, "special": 1, "model": "복합", "days": "월화수목금", "timeNote": "N/A", "note": "기관", "skipMonths": "없음", "filterMonths": "8월", "status": "운영중"}];
+
+// ══════════════════════════════════════
+// 설정
+// ══════════════════════════════════════
+const MGR_CLS = {'김보현':'kim','백형주':'baek','노경민':'noh','곽덕순':'kwak','미정':'etc','':"unmgr"};
+const MGR_LIST = [...new Set(SCHOOLS.map(s=>s.manager).filter(m=>m&&m!=='미정'))].sort();
+// 곽덕순은 담당자 고정 (평택2구역)
+const FIXED_MGR_SCHOOLS = new Set(SCHOOLS.filter(s=>s.manager==='곽덕순').map(s=>s.id));
+const ALL_CLUSTERS = [...new Set(SCHOOLS.map(s=>s.cluster).filter(Boolean))].sort();
+
+// 클러스터 순서 (DB 기준)
+const CL_ORDER = ['광명서부','안양북부','안양중부','과천군포','수원','화성동탄오산','시흥','인천','부천김포','부펀김포','고양파주','의정부북부','서울(성동구)','성남광주권','용인','이천여주','평택서부','평택중부','평택2구역','가축대전권','가축남부'];
+
+// 상태
+let weekStart = getMonday(new Date());
+let curMonth  = {y:new Date().getFullYear(), m:new Date().getMonth()};
+// schedule: {dateStr:[{schoolId,type,mgr,time,note}]}
+let schedule  = {};
+let filters   = new Set([...MGR_LIST,'미정','곽덕순']);
+let curCluster= null;
+let optMode   = 'check';
+let optMgr    = null;
+// 담당자 지정 대기
+let pendingMgr= null; // {ds, schoolId, type, time}
+
+// ══════════════════════════════════════
+// 헬퍼
+// ══════════════════════════════════════
+function getMonday(d){const dt=new Date(d);const dy=dt.getDay();dt.setDate(dt.getDate()+(dy===0?-6:1-dy));dt.setHours(0,0,0,0);return dt;}
+function ds(d){return d.toISOString().slice(0,10);}
+function addDays(d,n){const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt;}
+function mc(m){return MGR_CLS[m]||'etc';}
+
+function assignedCheck(){
+  // {schoolId: Set<mgr>} - 같은 학교에 여러 담당자 허용
+  const {y,m}=curMonth, pre=`${y}-${String(m+1).padStart(2,'0')}`;
+  const map={};
+  Object.entries(schedule).forEach(([d,es])=>{
+    if(!d.startsWith(pre)) return;
+    es.filter(e=>e.type==='check').forEach(e=>{
+      if(!map[e.schoolId]) map[e.schoolId]=new Set();
+      map[e.schoolId].add(e.mgr||'');
+    });
+  });
+  // .has() 호환: map.has = id => id in map
+  map.has = id => id in map;
+  map.size = Object.keys(map).filter(k=>k!=='has'&&k!=='size').length;
+  return map;
+}
+function assignedFilter(){
+  const {y,m}=curMonth, pre=`${y}-${String(m+1).padStart(2,'0')}`;
+  const ids=new Set();
+  Object.entries(schedule).forEach(([d,es])=>{if(d.startsWith(pre))es.filter(e=>e.type==='filter').forEach(e=>ids.add(e.schoolId));});
+  return ids;
+}
+function isFilter(s){
+  if(!s.filterMonths||s.filterMonths==='없음') return false;
+  const m=curMonth.m+1;
+  return s.filterMonths.replace(/월/g,'').split('/').map(n=>parseInt(n)).filter(n=>!isNaN(n)).includes(m);
+}
+function isSkip(s){
+  if(!s.skipMonths||s.skipMonths==='없음') return false;
+  const m=curMonth.m+1;
+  return s.skipMonths.replace(/월제외|월/g,'').split('/').map(n=>parseInt(n)).filter(n=>!isNaN(n)).includes(m);
+}
+function timeSlot(s){
+  const t=s.timeNote||'';
+  if(s.classroom===0){
+    if(t.match(/점심|12:|13:/)) return 'lunch';
+    if(t.match(/15:|16:|오후/)) return 'afternoon';
+    return 'morning';
+  }
+  if(t.match(/7:|8:|9:|10:|11:|오전/)) return 'morning';
+  if(t.match(/점심|12:|13:/)) return 'lunch';
+  return 'afternoon';
+}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' t-'+type:'');
+  setTimeout(()=>t.className='toast',2400);
+}
+function mLabel(m){return m&&m!==''?m:'미지정';}
+
+// ══════════════════════════════════════
+// 초기화
+// ══════════════════════════════════════
+function init(){
+  buildMgrChips(); buildClChips();
+  renderList(); renderCalendar();
+  renderSummary(); updateProgress();
+  populateModal();
+  updateMonthLabel();
+  document.getElementById('mDate').value=ds(new Date());
+  // GAS URL 설정된 경우 버튼 표시 + 저장 버튼 라벨 변경
+  if(GAS_URL){
+    const lb=document.getElementById('gasLoadBtn');
+    const pb=document.getElementById('gasPingBtn');
+    const sb=document.getElementById('saveBtn');
+    if(lb) lb.style.display='flex';
+    if(pb) pb.style.display='flex';
+    if(sb) sb.innerHTML='☁️ 시트 저장';
+    const lsb=document.getElementById('localSaveBtn');
+    if(lsb) lsb.style.display='flex';
+  }
+}
+
+function buildMgrChips(){
+  const el=document.getElementById('mgrChips');
+  [...MGR_LIST,'미정'].forEach(mgr=>{
+    const b=document.createElement('button');
+    b.className=`mgr-chip on ${mc(mgr)}`; b.textContent=mgr;
+    b.onclick=()=>{
+      if(filters.has(mgr)) filters.delete(mgr); else filters.add(mgr);
+      b.classList.toggle('on'); refresh();
+    };
+    el.appendChild(b);
+  });
+}
+function buildClChips(){
+  const el=document.getElementById('clChips'); el.innerHTML='';
+  // 전체 버튼
+  const all=document.createElement('div');
+  all.className='cl-chip'+(curCluster===null?' active':'');
+  all.textContent='전체';
+  all.onclick=()=>{curCluster=null; buildClChips(); renderList();};
+  el.appendChild(all);
+  // 클러스터별
+  const ordered=[...CL_ORDER,...ALL_CLUSTERS.filter(c=>!CL_ORDER.includes(c))];
+  ordered.forEach(c=>{
+    const b=document.createElement('div');
+    b.className='cl-chip'+(curCluster===c?' active':'');
+    b.textContent=c;
+    b.onclick=()=>{curCluster=(curCluster===c?null:c); buildClChips(); renderList();};
+    el.appendChild(b);
+  });
+}
+
+// ══════════════════════════════════════
+// 학교 사이드바
+// ══════════════════════════════════════
+function onSearch(){
+  const v=document.getElementById('searchInput').value;
+  document.getElementById('searchX').className='search-x'+(v?' show':'');
+  renderList();
+}
+function clearSearch(){document.getElementById('searchInput').value=''; document.getElementById('searchX').className='search-x'; renderList();}
+
+function renderList(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const hide=document.getElementById('hideAssigned').checked;
+  const fOnly=document.getElementById('filterOnly').checked;
+  const aC=assignedCheck(), aF=assignedFilter();
+  const el=document.getElementById('schoolList'); el.innerHTML='';
+
+  let list=SCHOOLS.filter(s=>{
+    if(curCluster&&s.cluster!==curCluster) return false;
+    if(q&&!s.name.includes(q)&&!s.region.includes(q)&&!s.model.toLowerCase().includes(q)) return false;
+    if(fOnly&&!isFilter(s)) return false;
+    if(hide&&aC.has(s.id)&&!isFilter(s)) return false;
+    return true;
+  });
+
+  const undone=list.filter(s=>!aC.has(s.id)&&!isSkip(s)).length;
+  document.getElementById('listCount').textContent=`${list.length}개교`;
+  document.getElementById('listUnassigned').textContent=`미배정 ${undone}개`;
+
+  list.sort((a,b)=>{
+    const p=s=>isSkip(s)?3:aC.has(s.id)?2:isFilter(s)&&!aF.has(s.id)?0:1;
+    return p(a)-p(b);
+  });
+
+  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px;font-size:11px">결과 없음</div>';return;}
+
+  list.forEach(s=>{
+    const dC=aC.has(s.id), dF=aF.has(s.id), iF=isFilter(s), iS=isSkip(s);
+    const assignedMgrs=dC&&aC[s.id]?[...aC[s.id]].filter(Boolean):[];
+    const cls=mc(s.manager);
+    const sz=s.total>=50?'lg':s.total>=20?'md':'sm';
+    let cardCls='scard', badge='';
+    if(iS){cardCls+=' skip';badge='<span class="scard-badge badge-skip">이달제외</span>';}
+    else if(dC){
+      // 배정됐어도 드래그 가능 (done 클래스 제거) - 담당자 추가 배정 허용
+      cardCls+=' assigned';
+      badge=`<span class="scard-badge badge-done">✓ ${assignedMgrs.length?assignedMgrs.join('·'):'배정'}</span>`;
+      if(iF&&!dF) badge+=`<span class="scard-badge badge-filter" style="right:8px;top:26px">🟣필터</span>`;
+    }
+    else if(iF&&!dF){cardCls+=' filter-target';badge='<span class="scard-badge badge-filter">🟣 필터교체</span>';}
+
+    const card=document.createElement('div');
+    card.className=cardCls;
+    if(!iS){
+      card.draggable=true;
+      card.addEventListener('dragstart',e=>{e.dataTransfer.setData('sid',s.id);card.classList.add('dragging');});
+      card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+    }
+    // 담당자 표시 (곽덕순 고정, 나머지는 미지정 가능 표시)
+    const mgrTag = s.manager==='곽덕순'
+      ? `<span class="tag t-kwak">곽덕순</span>`
+      : s.manager&&s.manager!=='미정'
+        ? `<span class="tag t-${cls}">${s.manager}</span>`
+        : `<span class="tag t-unmgr">담당미지정</span>`;
+
+    card.innerHTML=`${badge}
+      <div class="scard-name">${s.name} <span style="font-size:9px;color:var(--muted)">${s.region}</span></div>
+      <div class="scard-sub">
+        ${mgrTag}
+        <span class="tag t-${sz}">${s.total}대</span>
+        ${s.special>0?`<span class="tag t-sp">특${s.special}</span>`:''}
+        ${s.classroom>0?`<span class="tag t-cl">교${s.classroom}</span>`:''}
+        ${iF?'<span class="tag t-filter">필터이달</span>':''}
+      </div>
+      <div class="scard-time">⏰ ${s.timeNote||'-'} · ${s.model||'-'}</div>`;
+    el.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════
+// 이달 진행률
+// ══════════════════════════════════════
+function updateProgress(){
+  const aC=assignedCheck(), aF=assignedFilter();
+  const total=SCHOOLS.filter(s=>!isSkip(s)).length;
+  const ftarget=SCHOOLS.filter(s=>isFilter(s)&&!isSkip(s)).length;
+  const checkCnt=Object.keys(aC).filter(k=>k!=='has'&&k!=='size').length;
+  const units=Object.keys(aC).filter(k=>k!=='has'&&k!=='size').reduce((a,id)=>{const s=SCHOOLS.find(x=>x.id===parseInt(id));return a+(s?s.total:0);},0);
+  document.getElementById('mpCheck').textContent=`${checkCnt} / ${total}`;
+  document.getElementById('mpCheckFill').style.width=(total?checkCnt/total*100:0)+'%';
+  document.getElementById('mpFilter').textContent=`${aF.size} / ${ftarget}`;
+  document.getElementById('mpFilterFill').style.width=(ftarget?aF.size/ftarget*100:0)+'%';
+  document.getElementById('mpUnits').textContent=units.toLocaleString()+'대';
+}
+
+// ══════════════════════════════════════
+// 월 요약 (담당자별 이달 합계)
+// ══════════════════════════════════════
+function renderSummary(){
+  const {y,m}=curMonth, pre=`${y}-${String(m+1).padStart(2,'0')}`;
+  const mgrs={};
+  Object.entries(schedule).forEach(([d,es])=>{
+    if(!d.startsWith(pre)) return;
+    es.filter(e=>e.type==='check').forEach(e=>{
+      const s=SCHOOLS.find(x=>x.id===e.schoolId); if(!s) return;
+      const key=e.mgr||s.manager||'미지정';
+      mgrs[key]=(mgrs[key]||0)+s.total;
+    });
+  });
+  const mainMgrs=MGR_LIST.filter(m=>m!=='미정');
+  document.getElementById('monthSummary').innerHTML=mainMgrs.map(mgr=>`
+    <div class="sum-card ${mc(mgr)}">
+      <div class="sum-name">${mgr}</div>
+      <div class="sum-val">${(mgrs[mgr]||0).toLocaleString()}<span class="sum-unit">대</span></div>
+      <div class="sum-sub">이달 점검</div>
+    </div>`).join('')+
+    (mgrs['미지정']?`<div class="sum-card" style="border-top-color:#FCD34D">
+      <div class="sum-name" style="color:#92400E">미지정</div>
+      <div class="sum-val">${mgrs['미지정'].toLocaleString()}<span class="sum-unit">대</span></div>
+      <div class="sum-sub">담당자 미지정</div>
+    </div>`:'');
+}
+
+// ══════════════════════════════════════
+// 캘린더
+// ══════════════════════════════════════
+function renderCalendar(){
+  updateMonthLabel();
+  const grid=document.getElementById('weekGrid'); grid.innerHTML='';
+  const today=ds(new Date());
+
+  // 이달 1일 ~ 말일 전체 표시 (주 단위 행)
+  const {y,m}=curMonth;
+  const firstDay=new Date(y,m,1);
+  const lastDay=new Date(y,m+1,0);
+  // 첫 주 월요일 찾기
+  let start=getMonday(firstDay);
+  // 마지막 주 금요일이 말일 이후라도 포함
+  while(start<=lastDay){
+    const weekRow=document.createElement('div');
+    weekRow.className='cal-week-row';
+    for(let i=0;i<5;i++){
+      const day=addDays(start,i);
+      const d=ds(day);
+      const inMonth=day.getMonth()===m;
+      const entries=schedule[d]||[];
+      const dayTotal=entries.filter(e=>e.type==='check').reduce((a,e)=>{const s=SCHOOLS.find(x=>x.id===e.schoolId);return a+(s?s.total:0);},0);
+      const col=document.createElement('div');
+      col.className='day-col'+(d===today?' today':'')+(inMonth?'':' out-month');
+      if(!inMonth) col.style.opacity='0.35';
+      col.innerHTML=`
+        <div class="day-top">
+          <span class="day-date">${day.getDate()}</span>
+          ${dayTotal>0?`<span class="day-total">${dayTotal}대</span>`:''}
+        </div>
+        <div class="day-entries" data-date="${d}"></div>`;
+      const entEl=col.querySelector('.day-entries');
+      // 점검 엔트리에 필터교체 여부를 뱃지로 병합
+      const filterIds=new Set(entries.filter(e=>e.type==='filter').map(e=>e.schoolId));
+      entries.forEach((e,ei)=>{
+        const s=SCHOOLS.find(x=>x.id===e.schoolId); if(!s) return;
+        // 필터교체 전용 엔트리는 스킵 (점검 엔트리에 병합 표시)
+        if(e.type==='filter') return;
+        const eMgr=e.mgr||s.manager||'';
+        const cls=mc(eMgr||'');
+        const icon=e.time==='morning'?'🌅':e.time==='lunch'?'🍱':'🌆';
+        const needMgr=!eMgr||eMgr==='미정';
+        // 이 학교가 같은 날 필터교체도 배정됐는지 확인
+        const hasFilter=filterIds.has(s.id);
+        // 필터교체 엔트리 index 찾기 (삭제용)
+        const filterIdx=entries.findIndex(fe=>fe.type==='filter'&&fe.schoolId===s.id);
+        const div=document.createElement('div');
+        div.className=`entry ek-${cls}`;
+        div.dataset.date=d; div.dataset.idx=ei;
+        div.innerHTML=`
+          <span class="entry-icon">${icon}</span>
+          <span class="entry-name">${s.name}</span>
+          <span class="entry-cnt">${s.total}</span>
+          ${hasFilter?`<span class="filter-check-badge" data-date="${d}" data-fidx="${filterIdx}" title="필터교체 배정됨 (클릭하여 취소)">🔧</span>`:''}
+          ${needMgr
+            ? `<span class="entry-mgr assign-btn need-assign" data-date="${d}" data-idx="${ei}" title="클릭하여 담당자를 지정하세요">👤 담당자지정</span>`
+            : `<span class="entry-mgr assign-btn" data-date="${d}" data-idx="${ei}" title="클릭하여 담당자 변경">${eMgr} ✏️</span>`
+          }
+          <button class="entry-del" data-date="${d}" data-idx="${ei}">✕</button>`;
+        entEl.appendChild(div);
+      });
+      // 드롭
+      col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drag-over');});
+      col.addEventListener('dragleave',()=>col.classList.remove('drag-over'));
+      col.addEventListener('drop',e=>{
+        e.preventDefault(); col.classList.remove('drag-over');
+        const sid=parseInt(e.dataTransfer.getData('sid')); if(!sid) return;
+        const s=SCHOOLS.find(x=>x.id===sid); if(!s) return;
+        if(isSkip(s)){toast(`${s.name} 이달 제외 학교`,'warn');return;}
+        const time=timeSlot(s);
+        if(FIXED_MGR_SCHOOLS.has(sid)){
+          // 곽덕순 고정 학교: 중복 배정 불가
+          if(assignedCheck().has(sid)){toast(`${s.name} 이달 이미 배정됨`,'warn');return;}
+          addEntry(d,sid,'check','곽덕순',time,'');
+        } else {
+          addEntry(d,sid,'check','',time,'');
+          if(isFilter(s)&&!assignedFilter().has(sid)){
+            setTimeout(()=>{if(confirm(`📌 ${s.name}: 이달 필터교체 대상입니다.\n함께 배정할까요?`)){
+              addEntry(d,sid,'filter','',time,'');
+            }},80);
+          }
+        }
+      });
+      weekRow.appendChild(col);
+    }
+    grid.appendChild(weekRow);
+    start=addDays(start,7);
+  }
+
+  // 이벤트 위임: 담당자 지정 / 삭제 / 필터뱃지
+  grid.addEventListener('click',e=>{
+    // 필터교체 뱃지 클릭 → 필터교체 배정 취소
+    const fb=e.target.closest('.filter-check-badge');
+    if(fb){
+      e.stopPropagation();
+      if(confirm('필터교체 배정을 취소할까요?')) removeEntry(fb.dataset.date, parseInt(fb.dataset.fidx), e);
+      return;
+    }
+    // 담당자 지정
+    const assignBtn=e.target.closest('.assign-btn');
+    if(assignBtn){
+      e.stopPropagation();
+      openMgrModal(assignBtn.dataset.date, parseInt(assignBtn.dataset.idx), e);
+      return;
+    }
+    // 삭제
+    const delBtn=e.target.closest('.entry-del');
+    if(delBtn){
+      e.stopPropagation();
+      removeEntry(delBtn.dataset.date, parseInt(delBtn.dataset.idx), e);
+    }
+  });
+}
+
+function addEntry(d,schoolId,type,mgr,time,note){
+  if(!schedule[d]) schedule[d]=[];
+  schedule[d].push({schoolId,type,mgr,time,note});
+  const s=SCHOOLS.find(x=>x.id===schoolId);
+  toast(`✓ ${s?.name} ${type==='filter'?'필터교체':'점검'} 배정`,type==='filter'?'filter':'ok');
+  refresh();
+}
+function removeEntry(d,idx,ev){
+  ev.stopPropagation();
+  const e=schedule[d]?.[idx]; const s=SCHOOLS.find(x=>x.id===e?.schoolId);
+  schedule[d].splice(idx,1); if(!schedule[d].length) delete schedule[d];
+  toast(`${s?.name} 배정 취소`); refresh();
+}
+function refresh(){
+  renderCalendar(); renderList(); renderSummary(); updateProgress();
+  if(document.getElementById('page-db').style.display!=='none') renderDB();
+  if(document.getElementById('page-optimizer').style.display!=='none') renderOptimizer();
+}
+function changeWeek(n){/* 월 전체 표시 - 사용안함 */}
+function changeMonth(n){
+  curMonth.m+=n; if(curMonth.m>11){curMonth.m=0;curMonth.y++;} if(curMonth.m<0){curMonth.m=11;curMonth.y--;}
+  weekStart=getMonday(new Date(curMonth.y,curMonth.m,1)); refresh();
+}
+function syncMonth(){curMonth.y=weekStart.getFullYear();curMonth.m=weekStart.getMonth();renderList();updateProgress();}
+function goToday(){const n=new Date();curMonth={y:n.getFullYear(),m:n.getMonth()};weekStart=getMonday(n);refresh();}
+function updateMonthLabel(){
+  const M=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('monthLabel').textContent=`${curMonth.y}. ${M[curMonth.m]}`;
+}
+
+// ══════════════════════════════════════
+// 담당자 지정 모달
+// ══════════════════════════════════════
+let mgrTarget=null;
+let mgrSelected=null; // 현재 선택된 담당자
+
+function openMgrModal(d,idx,ev){
+  if(ev) ev.stopPropagation();
+  mgrTarget={d,idx};
+  mgrSelected=null;
+  const e=schedule[d]?.[idx]; const s=SCHOOLS.find(x=>x.id===e?.schoolId);
+  // 이 학교의 이달 배정 현황 표시
+  const aC=assignedCheck();
+  const existMgrs=aC.has(s?.id)&&aC[s?.id]?[...aC[s?.id]].filter(Boolean):[];
+  document.getElementById('mgrTargetName').innerHTML=
+    `📍 <strong>${s?.name}</strong> (${e?.type==='check'?'점검':'필터교체'})`+
+    (existMgrs.length?`<span style="font-size:10px;color:var(--teal);margin-left:8px">현재배정: ${existMgrs.join(', ')}</span>`:'');
+  const grid=document.getElementById('mgrGrid'); grid.innerHTML='';
+  const options=[...MGR_LIST,{label:'미지정',val:''}];
+  options.forEach(m=>{
+    const mgr=typeof m==='string'?m:m.val;
+    const label=typeof m==='string'?m:m.label;
+    const cls=mc(mgr);
+    const btn=document.createElement('div');
+    const isCurrent=(e?.mgr||'')===(mgr||'');
+    btn.className=`mgr-option${isCurrent?' sel-'+cls:''}`;
+    btn.dataset.mgr=mgr;
+    btn.innerHTML=(isCurrent?'✓ ':'')+(label||'미지정');
+    btn.onclick=()=>{
+      // 선택 토글
+      mgrSelected=mgr;
+      grid.querySelectorAll('.mgr-option').forEach(b=>{
+        const bMgr=b.dataset.mgr||'';
+        const bCls=mc(bMgr);
+        b.className=`mgr-option${bMgr===mgr?' sel-'+bCls:''}`;
+        b.innerHTML=(bMgr===mgr?'✓ ':'')+(b.textContent.replace('✓ ',''));
+      });
+    };
+    grid.appendChild(btn);
+  });
+  document.getElementById('mgrOverlay').classList.add('open');
+}
+
+function assignMgr(mode){
+  if(!mgrTarget||mgrSelected===null) {toast('담당자를 먼저 선택하세요','warn');return;}
+  const {d,idx}=mgrTarget;
+  const e=schedule[d]?.[idx]; if(!e) return;
+  const s=SCHOOLS.find(x=>x.id===e.schoolId);
+
+  if(mode==='change'){
+    // 현재 엔트리 담당자 변경
+    schedule[d][idx].mgr=mgrSelected;
+    toast(`✓ ${s?.name} 담당자 → ${mgrSelected||'미지정'} 변경`,'ok');
+  } else if(mode==='add'){
+    // 같은 학교 같은 날 새 엔트리 추가
+    const already=(schedule[d]||[]).some(en=>en.schoolId===e.schoolId&&en.type==='check'&&(en.mgr||'')===(mgrSelected||''));
+    if(already){toast(`${mgrSelected||'미지정'} 담당자로 이미 배정됨`,'warn');return;}
+    schedule[d].push({
+      schoolId:e.schoolId, type:e.type,
+      mgr:mgrSelected, time:e.time, note:e.note
+    });
+    toast(`✓ ${s?.name} + ${mgrSelected||'미지정'} 추가 배정`,'ok');
+  }
+  closeMgrModal(); refresh();
+}
+function closeMgrModal(){document.getElementById('mgrOverlay').classList.remove('open');mgrTarget=null;}
+
+// ══════════════════════════════════════
+// 최적배정 탭
+// ══════════════════════════════════════
+function setOptMode(mode){
+  optMode=mode;
+  document.getElementById('optModeCheck').className='opt-mode-btn'+(mode==='check'?' m-check':'');
+  document.getElementById('optModeFilter').className='opt-mode-btn'+(mode==='filter'?' m-filter':'');
+  renderOptimizer();
+}
+function renderOptimizer(){
+  const aC=assignedCheck(), aF=assignedFilter();
+  const isF=optMode==='filter';
+  // 담당자 탭
+  const btnEl=document.getElementById('optMgrBtns'); btnEl.innerHTML='';
+  ['전체',...MGR_LIST].forEach(mgr=>{
+    const isActive=(optMgr===mgr)||(optMgr===null&&mgr==='전체');
+    const cls=mc(mgr);
+    const cnt=mgr==='전체'
+      ?(isF?SCHOOLS.filter(s=>isFilter(s)&&!aF.has(s.id)).length:SCHOOLS.filter(s=>!aC.has(s.id)&&!isSkip(s)).length)
+      :(isF?SCHOOLS.filter(s=>s.manager===mgr&&isFilter(s)&&!aF.has(s.id)).length:SCHOOLS.filter(s=>s.manager===mgr&&!aC.has(s.id)&&!isSkip(s)).length);
+    const b=document.createElement('button');
+    b.className=`opt-mgr-btn${isActive?' on '+cls:''}`;
+    b.innerHTML=`${mgr} <span style="opacity:.65;font-size:10px">미배정 ${cnt}</span>`;
+    b.onclick=()=>{optMgr=(mgr==='전체'?null:mgr);renderOptimizer();};
+    btnEl.appendChild(b);
+  });
+
+  const el=document.getElementById('clCards'); el.innerHTML='';
+  const ordered=[...CL_ORDER,...ALL_CLUSTERS.filter(c=>!CL_ORDER.includes(c))];
+
+  ordered.forEach(cl=>{
+    let list=SCHOOLS.filter(s=>s.cluster===cl);
+    if(!list.length) return;
+    if(optMgr) list=list.filter(s=>s.manager===optMgr);
+    if(isF){
+      const ft=list.filter(s=>isFilter(s));
+      if(!ft.length) return;
+      const undone=ft.filter(s=>!aF.has(s.id));
+      const mgrs=[...new Set(ft.map(s=>s.manager))];
+      const card=document.createElement('div');
+      card.className='cl-card';
+      card.innerHTML=`
+        <div class="cl-card-hd h-filter">
+          <div>
+            <div class="cl-card-title">📍 ${cl}</div>
+            <div class="cl-card-meta"><span>${ft.length}개교 필터교체</span><span>미완료 ${undone.length}개교</span></div>
+          </div>
+          <div class="cl-mgr-tags">${mgrs.map(m=>`<span class="tag t-${mc(m)}" style="font-size:11px">${m}</span>`).join('')}</div>
+        </div>
+        <div class="cl-card-body"></div>`;
+      const body=card.querySelector('.cl-card-body');
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;flex-wrap:wrap;gap:3px;';
+      ft.forEach(s=>{
+        const done=aF.has(s.id);
+        const ch=document.createElement('span');
+        ch.className=`chip ck-filter${done?' done':''}`;
+        ch.title=done?`${s.name} 완료`:`${s.name} 클릭→오늘 배정`;
+        ch.innerHTML=`🟣 ${s.name}<span class="chip-cnt">${s.total}</span>${done?'✓':''}`;
+        if(!done) ch.onclick=()=>addEntry(ds(new Date()),s.id,'filter','',timeSlot(s),'');
+        row.appendChild(ch);
+      });
+      body.appendChild(row);
+      el.appendChild(card);
+    } else {
+      const nonSkip=list.filter(s=>!isSkip(s));
+      if(!nonSkip.length) return;
+      const m1=nonSkip.filter(s=>timeSlot(s)==='morning');
+      const m2=nonSkip.filter(s=>timeSlot(s)==='lunch');
+      const m3=nonSkip.filter(s=>timeSlot(s)==='afternoon');
+      const total=nonSkip.reduce((a,s)=>a+s.total,0);
+      const undone=nonSkip.filter(s=>!aC.has(s.id));
+      const skipList=list.filter(s=>isSkip(s));
+      const mgrs=[...new Set(nonSkip.map(s=>s.manager))];
+      const card=document.createElement('div');
+      card.className='cl-card';
+      card.innerHTML=`
+        <div class="cl-card-hd h-check">
+          <div>
+            <div class="cl-card-title">📍 ${cl}</div>
+            <div class="cl-card-meta">
+              <span>${nonSkip.length}개교 / ${total}대</span>
+              <span>미배정 ${undone.length}개교</span>
+              ${skipList.length?`<span>이달제외 ${skipList.length}</span>`:''}
+            </div>
+          </div>
+          <div class="cl-mgr-tags">${mgrs.map(m=>`<span class="tag t-${mc(m)}" style="font-size:11px">${mLabel(m)}</span>`).join('')}</div>
+        </div>
+        <div class="cl-card-body"></div>`;
+      const body=card.querySelector('.cl-card-body');
+      const grid=document.createElement('div');
+      grid.className='time-grid';
+      const hdRow=[
+        `<div class="tg-hd h0">구분</div>`,
+        `<div class="tg-hd h1">🌅 오전·특별실<br><span style="opacity:.65">${m1.length}개교 ${m1.reduce((a,s)=>a+s.total,0)}대</span></div>`,
+        `<div class="tg-hd h2">🍱 점심·교실<br><span style="opacity:.65">${m2.length}개교 ${m2.reduce((a,s)=>a+s.total,0)}대</span></div>`,
+        `<div class="tg-hd h3">🌆 오후·방과후<br><span style="opacity:.65">${m3.length}개교 ${m3.reduce((a,s)=>a+s.total,0)}대</span></div>`,
+      ];
+      grid.innerHTML=hdRow.join('');
+      const makeChip=(s,slot)=>{
+        const done=aC.has(s.id), nf=isFilter(s)&&!aF.has(s.id);
+        const cls=mc(s.manager);
+        const ch=document.createElement('span');
+        ch.className=`chip ck-${cls}${done?' done':''}`;
+        ch.title=`${s.name}|${s.total}대|${s.timeNote}${nf?'|🟣필터이달':''}`;
+        ch.innerHTML=`${s.name}<span class="chip-cnt">${s.total}</span>${nf?'🟣':''}${done?'✓':''}`;
+        if(!done) ch.onclick=()=>{
+          if(FIXED_MGR_SCHOOLS.has(s.id)){
+            if(aC.has(s.id)){toast('이미 배정됨','warn');return;}
+            addEntry(ds(new Date()),s.id,'check','곽덕순',slot,'');
+          } else {
+            addEntry(ds(new Date()),s.id,'check','',slot,'');
+          }
+          if(nf&&!assignedFilter().has(s.id)&&confirm(`${s.name}: 이달 필터교체도 함께 배정?`)) addEntry(ds(new Date()),s.id,'filter','',slot,'');
+        };
+        return ch;
+      };
+      const cells=[
+        document.createElement('div'),
+        document.createElement('div'),
+        document.createElement('div'),
+        document.createElement('div'),
+      ];
+      cells[0].className='tg-cell c0'; cells[0].textContent='학교';
+      cells[1].className='tg-cell c1'; cells[2].className='tg-cell c2'; cells[3].className='tg-cell c3';
+      if(!m1.length) cells[1].innerHTML='<span class="empty-cell">해당없음</span>'; else m1.forEach(s=>cells[1].appendChild(makeChip(s,'morning')));
+      if(!m2.length) cells[2].innerHTML='<span class="empty-cell">해당없음</span>'; else m2.forEach(s=>cells[2].appendChild(makeChip(s,'lunch')));
+      if(!m3.length) cells[3].innerHTML='<span class="empty-cell">해당없음</span>'; else m3.forEach(s=>cells[3].appendChild(makeChip(s,'afternoon')));
+      cells.forEach(c=>grid.appendChild(c));
+      body.appendChild(grid);
+      // 주의
+      const caut=[];
+      nonSkip.forEach(s=>{
+        if(s.note?.includes('사진')) caut.push(`${s.name}:📷사진필수`);
+        if(s.note?.includes('필터')) caut.push(`${s.name}:🔧필터`);
+        if(s.days&&s.days!=='월화수목금') caut.push(`${s.name}:${s.days}만`);
+        if(s.note?.includes('문자')) caut.push(`${s.name}:전날문자`);
+      });
+      if(caut.length){const cw=document.createElement('div');cw.className='caution-wrap';cw.innerHTML=caut.map(c=>`<span class="caution-tag">⚠️ ${c}</span>`).join('');body.appendChild(cw);}
+      // 요약
+      const sum=document.createElement('div');
+      sum.className='cl-summary';
+      sum.innerHTML=[
+        `<div class="cl-sum-item">미배정 <strong>${undone.length}개교</strong></div>`,
+        `<div class="cl-sum-item">미배정 <strong>${undone.reduce((a,s)=>a+s.total,0)}대</strong></div>`,
+        `<div class="cl-sum-item">필터교체 <strong>${nonSkip.filter(s=>isFilter(s)).length}개교</strong></div>`,
+        `<div class="cl-sum-item">오전<strong>${m1.filter(s=>!aC.has(s.id)).length}</strong>+점심<strong>${m2.filter(s=>!aC.has(s.id)).length}</strong>+오후<strong>${m3.filter(s=>!aC.has(s.id)).length}</strong></div>`,
+      ].join('');
+      body.appendChild(sum);
+      el.appendChild(card);
+    }
+  });
+}
+
+// ══════════════════════════════════════
+// DB 탭
+// ══════════════════════════════════════
+function renderDB(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const hide=document.getElementById('dbHide').checked;
+  const fOnly=document.getElementById('dbFilterOnly').checked;
+  const aC=assignedCheck(), aF=assignedFilter();
+  const list=SCHOOLS.filter(s=>{
+    if(curCluster&&s.cluster!==curCluster) return false;
+    if(q&&!s.name.includes(q)&&!s.region.includes(q)) return false;
+    if(hide&&aC.has(s.id)&&!isFilter(s)) return false;
+    if(fOnly&&!isFilter(s)) return false;
+    return true;
+  });
+  document.getElementById('dbCount').textContent=`${list.length}개교 / ${list.reduce((a,s)=>a+s.total,0).toLocaleString()}대`;
+  document.getElementById('dbBody').innerHTML=list.map((s,i)=>{
+    const cls=mc(s.manager);
+    const sz=s.total>=50?'lg':s.total>=20?'md':'sm';
+    const dC=aC.has(s.id), dF=aF.has(s.id), iF=isFilter(s), iS=isSkip(s);
+    let rowCls=''; if(iS)rowCls='row-skip'; else if(iF&&!dF)rowCls='row-filter'; else if(dC)rowCls='row-done';
+    const mgrCell=s.manager==='곽덕순'
+      ?`<span class="tag t-kwak">곽덕순</span>`
+      :`<span class="tag t-${cls}">${s.manager||'미지정'}</span>`;
+    const statusCell=iS?'<span style="color:var(--muted);font-size:10px">이달제외</span>'
+      :dC?'<span style="color:var(--ok);font-weight:700">✓점검</span>'
+      :'<span style="color:var(--border2)">—</span>';
+    const filterCell=iF?`<span style="color:var(--filter);font-weight:600">${s.filterMonths}${dF?' ✓':''}</span>`:'—';
+    return`<tr class="${rowCls}">
+      <td class="td-no">${i+1}</td>
+      <td class="td-name">${s.name}</td>
+      <td class="td-c" style="font-size:10px">${s.region}</td>
+      <td class="td-c" style="font-size:10px">${s.cluster}</td>
+      <td class="td-c">${mgrCell}</td>
+      <td class="td-${sz}">${s.total}</td>
+      <td class="td-c">${s.classroom||'—'}</td>
+      <td class="td-c">${s.special||'—'}</td>
+      <td class="td-time">${s.timeNote||'—'}</td>
+      <td class="td-c" style="font-size:10px;color:var(--muted)">${s.skipMonths||'—'}</td>
+      <td class="td-filter">${filterCell}</td>
+      <td class="td-c">${statusCell}</td>
+      <td class="td-note">${s.note||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// 탭
+// ══════════════════════════════════════
+function showTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+  ['calendar','optimizer','db'].forEach(n=>document.getElementById('page-'+n).style.display=n===name?'':'none');
+  if(name==='optimizer') renderOptimizer();
+  if(name==='db') renderDB();
+}
+
+// ══════════════════════════════════════
+// 추가 모달
+// ══════════════════════════════════════
+function populateModal(){
+  const mSel=document.getElementById('mMgr');
+  MGR_LIST.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;mSel.appendChild(o);});
+  const sSel=document.getElementById('mSchool');
+  SCHOOLS.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=`${s.name} (${s.cluster}, ${s.total}대)`;sSel.appendChild(o);});
+}
+function openAddModal(){
+  const aC=assignedCheck(),aF=assignedFilter();
+  Array.from(document.getElementById('mSchool').options).forEach(opt=>{
+    const sid=parseInt(opt.value); const s=SCHOOLS.find(x=>x.id===sid); if(!s) return;
+    const type=document.getElementById('mType').value;
+    const done=type==='filter'?aF.has(sid):aC.has(sid);
+    opt.disabled=done; opt.style.color=done?'var(--muted)':'';
+    opt.textContent=(done?'✓ ':'')+`${s.name} (${s.cluster}, ${s.total}대)`;
+  });
+  document.getElementById('addOverlay').classList.add('open');
+}
+function closeAddModal(){document.getElementById('addOverlay').classList.remove('open');}
+function submitAdd(){
+  const d=document.getElementById('mDate').value;
+  const sid=parseInt(document.getElementById('mSchool').value);
+  const type=document.getElementById('mType').value;
+  const mgr=document.getElementById('mMgr').value;
+  const time=document.getElementById('mTime').value;
+  const note=document.getElementById('mNote').value;
+  if(!d||!sid){alert('날짜와 학교를 선택하세요.');return;}
+  const aC=assignedCheck(),aF=assignedFilter();
+  if(type==='filter'&&aF.has(sid)){toast('이달 이미 필터교체 배정됨','warn');return;}
+  // check: 같은 담당자+같은 날짜 중복만 방지
+  const mgrVal=document.getElementById('mMgr').value;
+  const dateVal=document.getElementById('mDate').value;
+  const sameDayMgr=(schedule[dateVal]||[]).some(e=>e.schoolId===sid&&e.type==='check'&&(e.mgr||'')===(mgrVal||''));
+  if(type==='check'&&sameDayMgr){
+    toast(`같은 날 같은 담당자로 이미 배정됨`,'warn');return;
+  }
+  closeAddModal(); addEntry(d,sid,type,mgr,time,note);
+  weekStart=getMonday(new Date(d+'T00:00:00')); syncMonth(); renderCalendar();
+}
+document.getElementById('addOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('addOverlay'))closeAddModal();});
+document.getElementById('mgrOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('mgrOverlay'))closeMgrModal();});
+
+// ══════════════════════════════════════
+// 💾 저장 / 📂 불러오기
+// ══════════════════════════════════════
+function saveSchedule(){
+  if(!Object.keys(schedule).length){ toast('배정된 스케줄이 없습니다','warn'); return; }
+  if(GAS_URL){
+    syncToSheet();
+  } else {
+    saveLocal();
+  }
+}
+
+function saveLocal(){
+  // 수동 JSON 백업 (별도 버튼용)
+  if(!Object.keys(schedule).length){toast('배정된 스케줄이 없습니다','warn');return;}
+  const {y,m}=curMonth, mn=String(m+1).padStart(2,'0');
+  const blob=new Blob([JSON.stringify({version:'v6',savedAt:new Date().toLocaleString('ko-KR'),month:`${y}년${mn}월`,schedule},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`공청점검_스케줄_${y}년${mn}월.json`;a.click();URL.revokeObjectURL(a.href);
+  toast(`📥 JSON 백업 완료`,'ok');
+}
+function loadSchedule(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.schedule){toast('올바른 파일이 아닙니다','warn');return;}
+      const fixed={};
+      Object.entries(data.schedule).forEach(([d,es])=>{fixed[d]=es.map(e=>({...e,schoolId:parseInt(e.schoolId),type:e.type||'check',mgr:e.mgr||''}));});
+      schedule=fixed;
+      if(data.month){const x=data.month.match(/(\d+)년(\d+)월/);if(x){curMonth={y:parseInt(x[1]),m:parseInt(x[2])-1};weekStart=getMonday(new Date(curMonth.y,curMonth.m,1));}}
+      refresh(); toast(`📂 ${data.month||''} 불러오기 완료 (${Object.values(fixed).flat().length}건)`,'ok');
+    }catch{toast('파일 읽기 오류','warn');}
+    ev.target.value='';
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+
+// ══════════════════════════════════════
+// 📤 공유 · 인쇄
+// ══════════════════════════════════════
+let shareOpt = 'all';
+let shareMgr = null;
+
+function openShareModal(){
+  // 클러스터 셀렉트 초기화
+  const cSel = document.getElementById('share-cluster-sel');
+  cSel.innerHTML = '';
+  const ordered=[...CL_ORDER,...ALL_CLUSTERS.filter(c=>!CL_ORDER.includes(c))];
+  ordered.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;cSel.appendChild(o);});
+  cSel.onchange = ()=>buildSharePreview();
+  // 담당자 버튼
+  const mBtns = document.getElementById('share-mgr-btns');
+  mBtns.innerHTML='';
+  shareMgr = MGR_LIST[0];
+  MGR_LIST.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='share-opt-btn'+(m===shareMgr?' active':'');
+    b.textContent=m;
+    b.onclick=()=>{shareMgr=m;mBtns.querySelectorAll('.share-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');buildSharePreview();};
+    mBtns.appendChild(b);
+  });
+  document.getElementById('shareShowNote').onchange=buildSharePreview;
+  document.getElementById('shareShowFilter').onchange=buildSharePreview;
+  setShareOpt('all', document.getElementById('sopt-all'));
+  document.getElementById('shareOverlay').classList.add('open');
+}
+function closeShareModal(){document.getElementById('shareOverlay').classList.remove('open');}
+
+function setShareOpt(opt, btn){
+  shareOpt=opt;
+  document.querySelectorAll('.share-opt-btn[id^="sopt-"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sopt-mgr-sel').style.display = opt==='mgr'?'block':'none';
+  document.getElementById('sopt-cluster-sel').style.display = opt==='cluster'?'block':'none';
+  buildSharePreview();
+}
+
+function getShareEntries(){
+  const {y,m}=curMonth;
+  const pre=`${y}-${String(m+1).padStart(2,'0')}`;
+  const showFilter=document.getElementById('shareShowFilter').checked;
+  const result=[]; // [{date, schoolId, type, mgr, time, note}]
+  Object.entries(schedule).sort(([a],[b])=>a.localeCompare(b)).forEach(([d,es])=>{
+    if(!d.startsWith(pre)) return;
+    es.forEach(e=>{
+      if(e.type==='filter'&&!showFilter) return;
+      const s=SCHOOLS.find(x=>x.id===e.schoolId); if(!s) return;
+      if(shareOpt==='mgr'){const em=e.mgr||s.manager;if(em!==shareMgr) return;}
+      if(shareOpt==='cluster'){if(s.cluster!==document.getElementById('share-cluster-sel').value) return;}
+      result.push({d, s, e});
+    });
+  });
+  return result;
+}
+
+function buildSharePreview(){
+  const {y,m}=curMonth;
+  const MN=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const showNote=document.getElementById('shareShowNote').checked;
+  const showFilter=document.getElementById('shareShowFilter').checked;
+  const entries=getShareEntries();
+
+  if(!entries.length){
+    document.getElementById('sharePreview').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">배정된 스케줄이 없습니다</div>';
+    return;
+  }
+
+  // 날짜별 그룹
+  const byDate={};
+  entries.forEach(({d,s,e})=>{
+    if(!byDate[d]) byDate[d]=[];
+    byDate[d].push({s,e});
+  });
+
+  // 담당자별 색상
+  const MGR_COLOR={'김보현':'#1D4ED8','백형주':'#065F46','노경민':'#6D28D9','곽덕순':'#92400E','':'#4B5563'};
+
+  let html='';
+  // 헤더
+  const optLabel = shareOpt==='mgr'?` — ${shareMgr}`:shareOpt==='cluster'?` — ${document.getElementById('share-cluster-sel').value}`:'전체';
+  html+=`<div style="font-weight:700;font-size:13px;color:#0D1B3E;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #0D1B3E;">
+    세진인포 공기청정기 점검 스케줄 · ${y}년 ${MN[m]}${optLabel}
+  </div>`;
+
+  // 통계 요약
+  const totalCheck=entries.filter(({e})=>e.type==='check').length;
+  const totalFilter=entries.filter(({e})=>e.type==='filter').length;
+  const totalUnits=entries.filter(({e})=>e.type==='check').reduce((a,{s})=>a+s.total,0);
+  html+=`<div style="display:flex;gap:12px;font-size:10px;color:#6B7280;margin-bottom:10px;">
+    <span>📍 점검 ${totalCheck}건 / ${totalUnits.toLocaleString()}대</span>
+    ${showFilter&&totalFilter?`<span>🟣 필터교체 ${totalFilter}건</span>`:''}
+  </div>`;
+
+  // 날짜별
+  Object.entries(byDate).forEach(([d,items])=>{
+    const dateObj=new Date(d+'T00:00:00');
+    const dayNames=['일','월','화','수','목','금','토'];
+    const dayStr=`${dateObj.getMonth()+1}/${dateObj.getDate()}(${dayNames[dateObj.getDay()]})`;
+    const checkItems=items.filter(({e})=>e.type==='check');
+    const filterItems=items.filter(({e})=>e.type==='filter');
+    const dayTotal=checkItems.reduce((a,{s})=>a+s.total,0);
+
+    html+=`<div style="margin-bottom:8px;padding:8px 10px;border:1px solid #E4E9EF;border-radius:7px;background:#fff;">`;
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+      <span style="font-weight:700;font-size:12px;color:#0D1B3E;">${dayStr}</span>
+      ${dayTotal?`<span style="font-size:10px;background:#0D1B3E;color:#fff;padding:1px 7px;border-radius:8px;">${dayTotal}대</span>`:''}
+    </div>`;
+
+    checkItems.forEach(({s,e})=>{
+      const mgr=e.mgr||s.manager||'';
+      const mgrColor=MGR_COLOR[mgr]||'#4B5563';
+      const icon=e.time==='morning'?'🌅':e.time==='lunch'?'🍱':'🌆';
+      html+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #F3F4F6;">
+        <span style="font-size:11px;">${icon}</span>
+        <span style="flex:1;font-weight:600;font-size:11px;">${s.name}</span>
+        <span style="font-size:10px;font-weight:700;color:${mgrColor};">${mgr||'미지정'}</span>
+        <span style="font-size:10px;color:#6B7280;">${s.total}대</span>
+        ${showNote&&s.timeNote&&s.timeNote!=='N/A'?`<span style="font-size:9px;color:#9CA3AF;">⏰${s.timeNote}</span>`:''}
+      </div>`;
+    });
+    if(showFilter&&filterItems.length){
+      filterItems.forEach(({s,e})=>{
+        html+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #F3F4F6;">
+          <span style="font-size:11px;">🟣</span>
+          <span style="flex:1;font-size:11px;">${s.name} <span style="color:#8B5CF6;font-size:9px;">필터교체</span></span>
+          <span style="font-size:10px;color:#8B5CF6;">${s.total}대</span>
+        </div>`;
+      });
+    }
+    html+='</div>';
+  });
+
+  document.getElementById('sharePreview').innerHTML=html;
+}
+
+function copyShareText(){
+  const {y,m}=curMonth;
+  const MN=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const entries=getShareEntries();
+  if(!entries.length){toast('공유할 스케줄이 없습니다','warn');return;}
+  const byDate={};
+  entries.forEach(({d,s,e})=>{if(!byDate[d])byDate[d]=[];byDate[d].push({s,e});});
+  const dayNames=['일','월','화','수','목','금','토'];
+  let text=`[세진인포] 공기청정기 점검 스케줄 ${y}년 ${MN[m]}\n`;
+  text+=`${'='.repeat(30)}\n`;
+  Object.entries(byDate).forEach(([d,items])=>{
+    const dt=new Date(d+'T00:00:00');
+    text+=`\n📅 ${dt.getMonth()+1}/${dt.getDate()}(${dayNames[dt.getDay()]})\n`;
+    items.forEach(({s,e})=>{
+      const mgr=e.mgr||s.manager||'미지정';
+      const icon=e.type==='filter'?'🟣':(e.time==='morning'?'🌅':e.time==='lunch'?'🍱':'🌆');
+      text+=`  ${icon} ${s.name} (${s.total}대) - ${mgr}\n`;
+      if(document.getElementById('shareShowNote').checked&&s.timeNote&&s.timeNote!=='N/A'){
+        text+=`     ⏰ ${s.timeNote}\n`;
+      }
+      if(s.note) text+=`     📌 ${s.note}\n`;
+    });
+  });
+  navigator.clipboard.writeText(text).then(()=>toast('텍스트가 클립보드에 복사되었습니다','ok')).catch(()=>{
+    // 폴백: textarea 방식
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); toast('텍스트가 클립보드에 복사되었습니다','ok');
+  });
+}
+
+function shareKakao(){
+  // 카카오 공유 - 텍스트 복사 후 안내
+  copyShareText();
+  setTimeout(()=>toast('복사된 텍스트를 카카오톡 대화방에 붙여넣기(Ctrl+V)하세요','ok'),600);
+}
+
+function printSchedule(){
+  const {y,m}=curMonth;
+  const MN=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const entries=getShareEntries();
+  if(!entries.length){toast('인쇄할 스케줄이 없습니다','warn');return;}
+  const showNote=document.getElementById('shareShowNote').checked;
+  const showFilter=document.getElementById('shareShowFilter').checked;
+  const byDate={};
+  entries.forEach(({d,s,e})=>{if(!byDate[d])byDate[d]=[];byDate[d].push({s,e});});
+  const dayNames=['일','월','화','수','목','금','토'];
+
+  const MGR_COLOR={'김보현':'#1D4ED8','백형주':'#065F46','노경민':'#6D28D9','곽덕순':'#92400E','':'#4B5563'};
+  const optLabel=shareOpt==='mgr'?` — ${shareMgr}`:shareOpt==='cluster'?` — ${document.getElementById('share-cluster-sel').value}`:'';
+  const totalCheck=entries.filter(({e})=>e.type==='check').length;
+  const totalUnits=entries.filter(({e})=>e.type==='check').reduce((a,{s})=>a+s.total,0);
+
+  let printHtml=`
+  <style>
+    @page{margin:15mm 12mm;}
+    body{font-family:'Malgun Gothic',sans-serif;font-size:11px;color:#1C2B3A;}
+    h1{font-size:16px;font-weight:800;color:#0D1B3E;margin-bottom:4px;}
+    .meta{font-size:10px;color:#6B7280;margin-bottom:14px;}
+    .day-block{margin-bottom:10px;page-break-inside:avoid;border:1px solid #E4E9EF;border-radius:6px;overflow:hidden;}
+    .day-hd{background:#0D1B3E;color:#fff;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;}
+    .day-hd .date{font-weight:700;font-size:12px;}
+    .day-hd .cnt{font-size:10px;background:rgba(255,255,255,.2);padding:1px 7px;border-radius:8px;}
+    table{width:100%;border-collapse:collapse;}
+    tr:nth-child(even){background:#F9FAFB;}
+    td{padding:4px 8px;border-bottom:1px solid #F3F4F6;vertical-align:middle;}
+    .td-icon{width:20px;text-align:center;}
+    .td-name{font-weight:600;}
+    .td-mgr{text-align:center;font-size:10px;font-weight:700;width:60px;}
+    .td-total{text-align:right;font-weight:700;color:#374151;width:40px;}
+    .td-time{font-size:9px;color:#9CA3AF;width:80px;}
+    .footer{margin-top:20px;font-size:9px;color:#9CA3AF;text-align:center;border-top:1px solid #E4E9EF;padding-top:6px;}
+  </style>
+  <h1>세진인포 공기청정기 점검 스케줄</h1>
+  <div class="meta">${y}년 ${MN[m]}${optLabel} &nbsp;|&nbsp; 점검 ${totalCheck}건 · ${totalUnits.toLocaleString()}대 &nbsp;|&nbsp; 출력일: ${new Date().toLocaleDateString('ko-KR')}</div>`;
+
+  Object.entries(byDate).forEach(([d,items])=>{
+    const dt=new Date(d+'T00:00:00');
+    const checkItems=items.filter(({e})=>e.type==='check');
+    const filterItems=items.filter(({e})=>e.type==='filter');
+    const dayTotal=checkItems.reduce((a,{s})=>a+s.total,0);
+    printHtml+=`<div class="day-block">
+      <div class="day-hd">
+        <span class="date">${dt.getMonth()+1}/${dt.getDate()}(${dayNames[dt.getDay()]})</span>
+        ${dayTotal?`<span class="cnt">${dayTotal}대</span>`:''}
+      </div>
+      <table>`;
+    [...checkItems,...(showFilter?filterItems:[])].forEach(({s,e})=>{
+      const mgr=e.mgr||s.manager||'미지정';
+      const mc2=MGR_COLOR[mgr]||'#4B5563';
+      const isF=e.type==='filter';
+      const icon=isF?'🟣':(e.time==='morning'?'🌅':e.time==='lunch'?'🍱':'🌆');
+      printHtml+=`<tr>
+        <td class="td-icon">${icon}</td>
+        <td class="td-name">${s.name}${isF?' <span style="color:#8B5CF6;font-size:9px;">[필터]</span>':''}</td>
+        <td class="td-mgr" style="color:${mc2};">${mgr}</td>
+        <td class="td-total">${isF?'':s.total+'대'}</td>
+        ${showNote?`<td class="td-time">${s.timeNote&&s.timeNote!=='N/A'?s.timeNote:''}</td>`:''}
+        ${showNote?`<td style="font-size:9px;color:#9CA3AF;">${s.note||''}</td>`:''}
+      </tr>`;
+    });
+    printHtml+='</table></div>';
+  });
+  printHtml+=`<div class="footer">세진인포 | 공기청정기 점검 스케줄 관리 시스템</div>`;
+
+  const printArea=document.getElementById('printArea');
+  printArea.innerHTML=printHtml;
+  printArea.style.display='block';
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{printArea.style.display='none';},500);
+  },100);
+}
+
+document.getElementById('shareOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('shareOverlay'))closeShareModal();});
+
+// ══════════════════════════════════════
+// 구글 시트 연동 (Apps Script)
+// ══════════════════════════════════════
+
+async function gasRequest(method, params) {
+  if(!GAS_URL) { toast('GAS_URL을 설정해주세요','warn'); return null; }
+  try {
+    let res;
+    if(method === 'GET') {
+      const qs = Object.entries(params).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+      res = await fetch(`${GAS_URL}?${qs}`);
+    } else {
+      res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(params),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+      });
+    }
+    const data = await res.json();
+    return data;
+  } catch(err) {
+    console.error('GAS 오류:', err);
+    toast('구글 시트 연결 오류: ' + err.message, 'warn');
+    return null;
+  }
+}
+
+async function pingSheet() {
+  if(!GAS_URL){ toast('GAS_URL을 설정해주세요','warn'); return; }
+  toast('연결 확인 중...');
+  const data = await gasRequest('GET', { action: 'ping' });
+  if(!data) return;
+  if(data.ok) toast('✓ 구글 시트 연결 성공!', 'ok');
+  else toast('연결 실패: ' + (data.error || data.msg), 'warn');
+}
+
+async function syncToSheet() {
+  if(!GAS_URL){ toast('GAS_URL을 설정해주세요','warn'); return; }
+  if(!Object.keys(schedule).length){ toast('배정된 스케줄이 없습니다','warn'); return; }
+  toast('구글 시트에 저장 중...');
+  const month = `${curMonth.y}-${String(curMonth.m+1).padStart(2,'0')}`;
+  const data = await gasRequest('POST', { action:'save', schedule, month });
+  if(!data) return;
+  if(data.ok) toast(`✓ 구글 시트 저장 완료 (${data.count}건)`, 'ok');
+  else toast('저장 실패: ' + (data.error || data.msg), 'warn');
+}
+
+async function loadFromSheet() {
+  if(!GAS_URL){ toast('GAS_URL을 설정해주세요','warn'); return; }
+  toast('구글 시트에서 불러오는 중...');
+  const month = `${curMonth.y}-${String(curMonth.m+1).padStart(2,'0')}`;
+  const data = await gasRequest('GET', { action:'load', month });
+  if(!data) return;
+  if(data.ok && data.schedule) {
+    const fixed = {};
+    Object.entries(data.schedule).forEach(([d,es])=>{
+      fixed[d] = es.map(e=>({...e, schoolId: parseInt(e.schoolId)}));
+    });
+    schedule = fixed;
+    refresh();
+    toast(`✓ 불러오기 완료 (${data.count}건)`, 'ok');
+  } else {
+    toast(data.msg || data.error || '데이터 없음', 'warn');
+  }
+}
+
+function saveLocal() {
+  if(!Object.keys(schedule).length){ toast('배정된 스케줄이 없습니다','warn'); return; }
+  const {y,m}=curMonth, mn=String(m+1).padStart(2,'0');
+  const blob=new Blob([JSON.stringify({version:'v6',savedAt:new Date().toLocaleString('ko-KR'),month:`${y}년${mn}월`,schedule},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`공청점검_스케줄_${y}년${mn}월.json`; a.click(); URL.revokeObjectURL(a.href);
+  toast(`📥 JSON 백업 완료`,'ok');
+}
+
+init();
+</script>
+</body>
+</html>
