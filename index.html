@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT 유지보수 요청 시스템</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #533AB7; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+  --teal: #0F6E56;   --teal-light: #E1F5EE;
+  --amber: #BA7517;  --amber-light: #FAEEDA;
+  --red: #A32D2D;    --red-light: #FCEBEB;
+  --gray-bg: #F7F7F5; --border: #E2E0D8;
+  --text: #1A1A18; --text-2: #5F5E5A; --text-3: #9B9B97;
+  --radius: 8px; --radius-lg: 12px;
+}
+body { font-family: 'Noto Sans KR', -apple-system, sans-serif; font-size: 13px; background: var(--gray-bg); color: var(--text); line-height: 1.5; }
+.app { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.header { margin-bottom: 1.5rem; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.header p  { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+
+/* 탭 */
+.tab-nav { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; overflow-x: auto; }
+.tb { padding: 9px 16px; font-size: 13px; font-weight: 500; border: none; background: none; cursor: pointer; color: var(--text-2); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; display: flex; align-items: center; gap: 5px; transition: color .15s; }
+.tb.active { color: var(--purple-dark); border-bottom-color: var(--purple); }
+.tb:hover:not(.active) { color: var(--text); }
+.cnt { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--purple-light); color: var(--purple-dark); font-size: 10px; font-weight: 600; }
+.panel { display: none; } .panel.active { display: block; }
+
+/* 카드 */
+.sc { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: .75rem; }
+.st { font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: .75rem; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.pill { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+.pill-p { background: var(--purple-light); color: var(--purple-dark); }
+.pill-g { background: var(--teal-light); color: var(--teal); }
+.pill-a { background: var(--amber-light); color: var(--amber); }
+
+/* 폼 */
+.fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.full { grid-column: 1 / -1; }
+.fl { display: flex; flex-direction: column; gap: 3px; }
+label.lbl { font-size: 11px; color: var(--text-2); font-weight: 500; }
+input, select, textarea { font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; width: 100%; background: #fff; color: var(--text); outline: none; font-family: inherit; transition: border-color .15s, box-shadow .15s; }
+input:focus, select:focus, textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-light); }
+textarea { resize: vertical; }
+
+/* 요청자재 테이블 */
+.mat-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.mat-table th { font-size: 11px; font-weight: 600; color: var(--text-2); padding: 6px 8px; background: var(--gray-bg); border: 1px solid var(--border); text-align: center; }
+.mat-table td { padding: 5px 6px; border: 1px solid var(--border); vertical-align: middle; }
+.mat-table td:first-child { width: 40%; }
+.mat-table td.qty-cell { width: 30%; text-align: center; }
+.mat-table select { font-size: 12px; padding: 5px 6px; }
+.mat-table input[type=number] { width: 52px; text-align: center; padding: 5px; }
+.qty-ctrl { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.qb { width: 26px; height: 26px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--gray-bg); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.qb:hover { background: #e0e0e0; }
+.add-row-btn { margin-top: 7px; font-size: 12px; padding: 5px 12px; border: 1px dashed var(--border); border-radius: var(--radius); background: none; cursor: pointer; color: var(--text-2); font-family: inherit; transition: background .12s; }
+.add-row-btn:hover { background: var(--gray-bg); }
+.del-btn { width: 22px; height: 22px; border: none; border-radius: 50%; background: #f1efeb; cursor: pointer; font-size: 12px; color: var(--text-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.del-btn:hover { background: var(--red-light); color: var(--red); }
+
+/* 주문여부 / 긴급도 버튼 */
+.opt-row { display: flex; gap: 6px; }
+.ob { flex: 1; padding: 8px 6px; border: 1px solid var(--border); border-radius: var(--radius); background: none; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--text-2); transition: all .12s; text-align: center; font-family: inherit; }
+.ob:hover { background: var(--gray-bg); }
+.ob.ord-type.a { border-color: var(--purple); background: var(--purple-light); color: var(--purple-dark); }
+.ob.urg-type.a { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
+.ob.urg-type.hi.a { border-color: var(--red); background: var(--red-light); color: var(--red); }
+
+/* 사진 */
+.photo-zone { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; cursor: pointer; background: var(--gray-bg); transition: border-color .12s, background .12s; }
+.photo-zone:hover { border-color: var(--purple); background: var(--purple-light); }
+.photo-zone input { display: none; }
+.photo-zone .icon { font-size: 22px; color: var(--text-3); }
+.photo-zone p { font-size: 12px; color: var(--text-2); margin-top: 5px; }
+.photo-zone small { font-size: 11px; color: var(--text-3); }
+.thumbs { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.thumb { position: relative; width: 62px; height: 62px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb .dx { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; background: var(--red); color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+
+/* 버튼 */
+.sbtn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: .5rem; transition: opacity .15s, transform .1s; font-family: inherit; }
+.sbtn:hover { opacity: .9; } .sbtn:active { transform: scale(.99); }
+.sbtn.est { background: var(--purple); color: #fff; }
+.sbtn.ord { background: var(--teal); color: #fff; }
+.icon-btn { font-size: 12px; padding: 4px 9px; border: 1px solid var(--border); border-radius: var(--radius); background: none; cursor: pointer; color: var(--text-2); white-space: nowrap; transition: background .12s; font-family: inherit; }
+.icon-btn:hover { background: var(--gray-bg); }
+.icon-btn.cart { border-color: var(--teal); color: var(--teal); }
+.icon-btn.cart:hover { background: var(--teal-light); }
+
+/* 알림 */
+.toast { padding: 9px 14px; border-radius: var(--radius); font-size: 12px; margin-top: .5rem; display: none; font-weight: 500; }
+.toast.ok { background: var(--teal-light); color: var(--teal); border: 1px solid #9FE1CB; }
+.toast.err { background: var(--red-light); color: var(--red); border: 1px solid #F7C1C1; }
+
+/* 이력 */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: .875rem; }
+.stat-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem; text-align: center; }
+.stat-n { font-size: 24px; font-weight: 600; line-height: 1; }
+.stat-l { font-size: 11px; color: var(--text-2); margin-top: 4px; }
+.sync-bar { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; color: var(--text-2); margin-bottom: .75rem; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot.on { background: #1D9E75; } .dot.off { background: #888780; }
+.fr { display: flex; gap: 7px; margin-bottom: .875rem; flex-wrap: wrap; }
+.fr input, .fr select { font-size: 12px; flex: 1; min-width: 90px; }
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-2); padding: 8px 9px; border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--gray-bg); }
+td { padding: 8px 9px; border-bottom: 1px solid #F0EFE8; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+tr:hover td { background: #FAFAF8; }
+.bx { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.b-est { background: var(--purple-light); color: var(--purple-dark); }
+.b-ord { background: var(--teal-light); color: var(--teal); }
+.b-both { background: #FFF3E0; color: #E65100; }
+.b-low { background: var(--teal-light); color: var(--teal); }
+.b-hi  { background: var(--red-light); color: var(--red); }
+.b-new { background: var(--purple-light); color: var(--purple-dark); }
+.b-wip { background: var(--amber-light); color: var(--amber); }
+.b-done { background: #EAF3DE; color: #3B6D11; }
+.b-cancel { background: #F1EFE8; color: #5F5E5A; }
+.ss { font-size: 11px; padding: 3px 6px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; color: var(--text); cursor: pointer; }
+
+/* 상세 */
+.dcard { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-top: .75rem; }
+.dr { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #F0EFE8; font-size: 12px; }
+.dr:last-child { border-bottom: none; }
+.dk { color: var(--text-2); font-size: 11px; flex-shrink: 0; margin-right: 8px; min-width: 80px; }
+
+/* 견적→주문 카드 */
+.est-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 7px; background: #fff; }
+.est-card:hover { border-color: #B0ADE8; }
+.est-card-info { flex: 1; min-width: 0; }
+.est-card-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.est-card-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 설정 */
+.cfg-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F0EFE8; }
+.cfg-row:last-child { border-bottom: none; }
+.cfg-l { flex: 1; font-size: 13px; }
+.cfg-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.ci { flex: 2; }
+.ci input { font-size: 12px; padding: 6px 9px; }
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.tsl { position: absolute; inset: 0; background: #D3D1C7; border-radius: 11px; cursor: pointer; transition: background .2s; }
+.tsl::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s; }
+.toggle input:checked + .tsl { background: var(--purple); }
+.toggle input:checked + .tsl::before { transform: translateX(18px); }
+.code-box { background: var(--gray-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.7; color: var(--text-2); margin-top: 10px; white-space: pre-wrap; overflow-x: auto; }
+.toggle-section-btn { width: 100%; text-align: left; padding: 9px 12px; border: 1px dashed var(--border); border-radius: var(--radius); background: none; cursor: pointer; font-size: 12px; color: var(--text-2); font-family: inherit; display: flex; align-items: center; gap: 6px; transition: background .12s; }
+.toggle-section-btn:hover { background: var(--gray-bg); }
+
+/* 접수 완료 모달 */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fadeIn .2s ease; }
+.modal-box { background: #fff; border-radius: var(--radius-lg); padding: 2rem 1.75rem; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: slideUp .25s ease; }
+.modal-icon { font-size: 48px; text-align: center; margin-bottom: .75rem; }
+.modal-title { font-size: 18px; font-weight: 700; text-align: center; color: var(--teal); margin-bottom: .25rem; }
+.modal-sub { font-size: 13px; color: var(--text-2); text-align: center; margin-bottom: 1.25rem; }
+.modal-id { display: inline-block; background: var(--purple-light); color: var(--purple-dark); font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: .5px; }
+.modal-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 13px; }
+.modal-table td { padding: 7px 4px; border-bottom: 1px solid #F0EFE8; vertical-align: top; }
+.modal-table td:first-child { color: var(--text-2); font-size: 11px; width: 80px; padding-top: 8px; }
+.modal-table tr:last-child td { border-bottom: none; }
+.modal-close { width: 100%; padding: 11px; background: var(--teal); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: .5rem; transition: opacity .15s; }
+.modal-close:hover { opacity: .88; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+@media (max-width: 600px) {
+  .fg { grid-template-columns: 1fr; }
+  .full { grid-column: 1; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .tb { padding: 8px 10px; font-size: 12px; }
+  .opt-row { flex-wrap: wrap; }
+}
+
+/* 접수 완료 모달 */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fadeIn .2s ease; }
+.modal-box { background: #fff; border-radius: var(--radius-lg); padding: 2rem 1.75rem; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: slideUp .25s ease; }
+.modal-icon { font-size: 48px; text-align: center; margin-bottom: .75rem; }
+.modal-title { font-size: 18px; font-weight: 700; text-align: center; color: var(--teal); margin-bottom: .25rem; }
+.modal-sub { font-size: 13px; color: var(--text-2); text-align: center; margin-bottom: 1.25rem; }
+.modal-id { display: inline-block; background: var(--purple-light); color: var(--purple-dark); font-size: 14px; font-weight: 700; padding: 5px 16px; border-radius: 20px; letter-spacing: .5px; }
+.modal-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 13px; }
+.modal-table td { padding: 7px 4px; border-bottom: 1px solid #F0EFE8; vertical-align: top; }
+.modal-table td:first-child { color: var(--text-2); font-size: 11px; width: 80px; padding-top: 9px; white-space: nowrap; }
+.modal-table tr:last-child td { border-bottom: none; }
+.modal-close { width: 100%; padding: 12px; background: var(--teal); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: .5rem; transition: opacity .15s; }
+.modal-close:hover { opacity: .88; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>IT 유지보수 요청 시스템</h1>
+    <p>견적 요청 → 주문 전환 · Google Sheets 자동 기록 · 이메일 알림</p>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tb active" onclick="sw('estimate')">📋 견적/주문 요청</button>
+    <button class="tb" onclick="sw('order')">🛒 견적→주문 전환 <span class="cnt" id="cart-cnt" style="display:none">0</span></button>
+    <button class="tb" onclick="sw('history')">📂 이력 조회</button>
+    <button class="tb" onclick="sw('settings')">⚙ 연동 설정</button>
+  </div>
+
+  <!-- ═══════════════════════════════
+       견적/주문 요청 탭
+  ═══════════════════════════════ -->
+  <div id="tab-estimate" class="panel active">
+
+    <!-- 현장 정보 -->
+    <div class="sc">
+      <div class="st">현장 정보 <span class="pill pill-p">필수</span></div>
+      <div class="fg">
+        <div class="fl"><label class="lbl">학교 / 현장명</label><input id="e-site" placeholder="예) OO초등학교"></div>
+        <div class="fl"><label class="lbl">부서명 / 성명</label><input id="e-dept" placeholder="예) 행정실 / 홍길동"></div>
+        <div class="fl"><label class="lbl">발송부서/메일주소</label><input type="email" id="e-email" placeholder="example@school.kr"></div>
+        <div class="fl"><label class="lbl">담당 기사명</label>
+          <select id="e-eng">
+            <option value="">-- 선택 --</option>
+            <option>조현석</option><option>김상일</option><option>김경훈</option><option>신태범</option>
+            <option>한광식</option><option>김동명</option><option>장재효</option><option>경영지원본부</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 요청 자재 -->
+    <div class="sc">
+      <div class="st">요청 자재 <span class="pill pill-a">품목·수량 입력</span></div>
+      <table class="mat-table">
+        <thead>
+          <tr>
+            <th>품목</th>
+            <th>모델명</th>
+            <th>규격 / 상세</th>
+            <th>수량</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="e-mat-body">
+          <!-- 기본 1행 -->
+        </tbody>
+      </table>
+      <button class="add-row-btn" onclick="addMatRow('e-mat-body')">＋ 품목 추가</button>
+    </div>
+
+    <!-- 주문여부 + 긴급도 -->
+    <div class="sc">
+      <div class="fg">
+        <div class="fl">
+          <label class="lbl">주문 여부</label>
+          <div class="opt-row" id="e-ord-row">
+            <button class="ob ord-type" onclick="selOpt(this,'e-ord-row','ord-type')">견적만</button>
+            <button class="ob ord-type" onclick="selOpt(this,'e-ord-row','ord-type')">주문만</button>
+            <button class="ob ord-type" onclick="selOpt(this,'e-ord-row','ord-type')">견적+주문</button>
+          </div>
+        </div>
+        <div class="fl">
+          <label class="lbl">긴급도</label>
+          <div class="opt-row" id="e-urg-row">
+            <button class="ob urg-type" onclick="selOpt(this,'e-urg-row','urg-type')">일반</button>
+            <button class="ob urg-type hi" onclick="selOpt(this,'e-urg-row','urg-type')">긴급</button>
+          </div>
+        </div>
+        <div class="fl full">
+          <label class="lbl">비고</label>
+          <textarea id="e-note" rows="2" placeholder="참고사항 및 추가 요청사항을 입력하세요"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 현장 사진 첨부 -->
+    <div class="sc">
+      <div class="st">현장 사진 첨부 <span class="pill pill-a">선택</span></div>
+      <div class="photo-zone" onclick="document.getElementById('e-file').click()">
+        <input type="file" id="e-file" accept="image/*" multiple onchange="addPics(this,'e-prev','e')">
+        <div class="icon">📷</div>
+        <p>클릭하여 사진 추가 (여러 장 가능)</p>
+        <small>JPG · PNG · HEIC 지원</small>
+      </div>
+      <div class="thumbs" id="e-prev"></div>
+    </div>
+
+    <button class="sbtn est" onclick="submitEst()">📤 요청 제출</button>
+    <div class="toast" id="e-toast"></div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       견적→주문 전환 탭
+  ═══════════════════════════════ -->
+  <div id="tab-order" class="panel">
+    <div id="est-list-wrap"></div>
+    <div class="sc" style="border-style:dashed">
+      <div class="st">신규 주문 직접 입력 <span class="pill pill-a">견적 없이 바로 주문</span></div>
+      <button class="toggle-section-btn" id="new-order-toggle" onclick="toggleNewOrder()">▼ 신규 주문 입력 열기</button>
+      <div id="new-order-form" style="display:none;margin-top:.75rem">
+        <div class="fg" style="margin-bottom:9px">
+          <div class="fl"><label class="lbl">학교 / 현장명</label><input id="o-site" placeholder="예) OO초등학교"></div>
+          <div class="fl"><label class="lbl">부서명 / 성명</label><input id="o-dept" placeholder="예) 행정실 / 홍길동"></div>
+          <div class="fl"><label class="lbl">발송부서/메일주소</label><input type="email" id="o-email" placeholder="example@school.kr"></div>
+          <div class="fl"><label class="lbl">담당 기사명</label>
+            <select id="o-eng">
+              <option value="">-- 선택 --</option>
+              <option>조현석</option><option>김상일</option><option>김경훈</option><option>신태범</option>
+              <option>한광식</option><option>김동명</option><option>장재효</option><option>경영지원본부</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 요청자재 -->
+        <div style="margin-bottom:9px">
+          <div class="st" style="margin-bottom:6px">요청 자재</div>
+          <table class="mat-table">
+            <thead><tr><th>품목</th><th>모델명</th><th>규격 / 상세</th><th>수량</th><th></th></tr></thead>
+            <tbody id="o-mat-body"></tbody>
+          </table>
+          <button class="add-row-btn" onclick="addMatRow('o-mat-body')">＋ 품목 추가</button>
+        </div>
+
+        <div class="fg">
+          <div class="fl">
+            <label class="lbl">주문 여부</label>
+            <div class="opt-row" id="o-ord-row">
+              <button class="ob ord-type" onclick="selOpt(this,'o-ord-row','ord-type')">견적만</button>
+              <button class="ob ord-type" onclick="selOpt(this,'o-ord-row','ord-type')">주문만</button>
+              <button class="ob ord-type" onclick="selOpt(this,'o-ord-row','ord-type')">견적+주문</button>
+            </div>
+          </div>
+          <div class="fl">
+            <label class="lbl">긴급도</label>
+            <div class="opt-row" id="o-urg-row">
+              <button class="ob urg-type" onclick="selOpt(this,'o-urg-row','urg-type')">일반</button>
+              <button class="ob urg-type hi" onclick="selOpt(this,'o-urg-row','urg-type')">긴급</button>
+            </div>
+          </div>
+          <div class="fl full"><label class="lbl">비고</label><textarea id="o-note" rows="2" placeholder="배송지, 납기일, 특이사항"></textarea></div>
+        </div>
+        <div class="sc" style="margin-top:9px">
+          <div class="st">사진 첨부 <span class="pill pill-a">선택</span></div>
+          <div class="photo-zone" onclick="document.getElementById('o-file').click()">
+            <input type="file" id="o-file" accept="image/*" multiple onchange="addPics(this,'o-prev','o')">
+            <div class="icon">📷</div><p>클릭하여 사진 추가</p>
+          </div>
+          <div class="thumbs" id="o-prev"></div>
+        </div>
+        <button class="sbtn ord" onclick="submitNewOrder()">🛒 신규 주문 제출</button>
+      </div>
+    </div>
+    <div class="toast" id="o-toast"></div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       이력 조회 탭
+  ═══════════════════════════════ -->
+  <div id="tab-history" class="panel">
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="sync-bar">
+      <div class="dot off" id="sdot"></div>
+      <span id="stxt" style="flex:1">연동 상태 확인 중...</span>
+      <button class="icon-btn" onclick="syncFromSheets()">↺ 동기화</button>
+    </div>
+    <div class="fr">
+      <input id="h-q" placeholder="현장명, 기사명 검색..." oninput="rh()">
+      <select id="h-type" onchange="rh()"><option value="">전체 유형</option><option>견적만</option><option>주문만</option><option>견적+주문</option></select>
+      <select id="h-urg"  onchange="rh()"><option value="">전체 긴급도</option><option>일반</option><option>긴급</option></select>
+      <select id="h-stat" onchange="rh()"><option value="">전체 상태</option><option>접수완료</option><option>처리중</option><option>완료</option><option>취소</option></select>
+    </div>
+    <div class="sc" style="padding:0;overflow:hidden">
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th style="width:100px">접수일시</th>
+            <th style="width:60px">구분</th>
+            <th style="width:100px">현장명</th>
+            <th style="width:64px">기사</th>
+            <th>장비/자재</th>
+            <th style="width:44px">긴급도</th>
+            <th style="width:88px">상태</th>
+            <th style="width:70px">액션</th>
+          </tr></thead>
+          <tbody id="hbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="dw"></div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       연동 설정 탭
+  ═══════════════════════════════ -->
+  <div id="tab-settings" class="panel">
+    <div class="sc">
+      <div class="st">이메일 알림 <span class="pill pill-p">EmailJS</span></div>
+      <div class="cfg-row"><div class="cfg-l"><div>알림 활성화</div><div class="cfg-sub">제출 시 관리자 자동 발송</div></div><label class="toggle"><input type="checkbox" id="cfg-me" onchange="saveCfg()"><span class="tsl"></span></label></div>
+      <div class="cfg-row"><div class="cfg-l">Service ID</div><div class="ci"><input id="cfg-sid" placeholder="service_xxxxxxx" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">Template ID</div><div class="ci"><input id="cfg-tid" placeholder="template_xxxxxxx" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">Public Key</div><div class="ci"><input id="cfg-pk" placeholder="user_xxxxxx" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">관리자 수신 이메일</div><div class="ci"><input type="email" id="cfg-adm" placeholder="admin@company.com" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l"><div>상태 변경 시 담당자 통보</div></div><label class="toggle"><input type="checkbox" id="cfg-sn" onchange="saveCfg()"><span class="tsl"></span></label></div>
+    </div>
+    <div class="sc">
+      <div class="st">Google Sheets <span class="pill pill-g">Apps Script</span></div>
+      <div class="cfg-row"><div class="cfg-l"><div>Sheets 연동 활성화</div></div><label class="toggle"><input type="checkbox" id="cfg-gs" onchange="saveCfg()"><span class="tsl"></span></label></div>
+      <div class="cfg-row"><div class="cfg-l">웹앱 URL<div class="cfg-sub">배포 후 /exec URL</div></div><div class="ci"><input id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l">시트 이름</div><div class="ci"><input id="cfg-sh" placeholder="이력관리" oninput="saveCfg()"></div></div>
+      <div class="cfg-row"><div class="cfg-l"><div>상태 자동 동기화</div></div><label class="toggle"><input type="checkbox" id="cfg-as" onchange="saveCfg()"><span class="tsl"></span></label></div>
+    </div>
+    <button class="sbtn est" onclick="testConn()">🔌 연동 테스트</button>
+    <button class="sbtn" style="background:#fff;color:var(--text);border:1px solid var(--border);margin-top:.5rem" onclick="clearCfg()">설정 초기화</button>
+    <div class="toast" id="cfg-toast"></div>
+    <div class="cfg-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div class="cfg-l" style="display:flex;justify-content:space-between;align-items:center">
+        <span>디버그 로그 (임시 확인용)</span>
+        <button class="icon-btn" onclick="document.getElementById('debug-log').textContent=''">지우기</button>
+      </div>
+      <pre id="debug-log" style="background:#0d1b2a;color:#8ee7c7;font-size:10px;line-height:1.5;padding:8px;border-radius:6px;max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin:0"></pre>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── 상수 ──────────────────────────────────────────
+const PARTS = ['토너(흑백)','토너(칼라)','잉크카트리지','A4용지','플로터용지',
+  '노트북부품','프린터부품','복사기부품','컴퓨터부품','케이블','기타'];
+
+const pics = { e: [], o: [] };
+let records = [];
+
+// ── 요청자재 행 추가 ─────────────────────────────
+function addMatRow(tbodyId, defPart='', defModel='', defSpec='', defQty=1) {
+  const tbody = document.getElementById(tbodyId);
+  const tr = document.createElement('tr');
+  const partOpts = PARTS.map(p => `<option${p===defPart?' selected':''}>${p}</option>`).join('');
+  const extraOpt = (defPart && !PARTS.includes(defPart)) ? `<option selected>${defPart}</option>` : '';
+  tr.innerHTML = `
+    <td>
+      <select onchange="void(0)" style="font-size:12px;padding:5px 6px">
+        <option value="">-- 선택 --</option>
+        ${extraOpt}${partOpts}
+      </select>
+    </td>
+    <td><input type="text" placeholder="예) HP LaserJet M404n" value="${defModel}" style="font-size:12px;padding:5px 6px"></td>
+    <td><input type="text" placeholder="규격, 색상 등" value="${defSpec}" style="font-size:12px;padding:5px 6px"></td>
+    <td class="qty-cell">
+      <div class="qty-ctrl">
+        <button class="qb" type="button" onclick="adjQty(this,-1)">−</button>
+        <input type="number" value="${defQty}" min="1" style="width:46px;text-align:center;font-size:12px;padding:4px">
+        <button class="qb" type="button" onclick="adjQty(this,1)">+</button>
+      </div>
+    </td>
+    <td style="text-align:center"><button class="del-btn" type="button" onclick="this.closest('tr').remove()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function adjQty(btn, d) {
+  const inp = btn.parentElement.querySelector('input[type=number]');
+  inp.value = Math.max(1, parseInt(inp.value || 1) + d);
+}
+
+function getMatRows(tbodyId) {
+  const rows = [];
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(tr => {
+    const sel   = tr.querySelector('select');
+    const model = tr.querySelectorAll('input')[0];
+    const spec  = tr.querySelectorAll('input')[1];
+    const qty   = tr.querySelectorAll('input')[2];
+    const part = sel ? sel.value : '';
+    if (!part) return;
+    const m = model ? model.value.trim() : '';
+    const s = spec  ? spec.value.trim()  : '';
+    const q = qty   ? parseInt(qty.value || 1) : 1;
+    rows.push({ part, model: m, spec: s, qty: q });
+  });
+  return rows;
+}
+
+// matRows(구조화된 배열) → 화면/시트 표시용 문자열 두 개(품목·모델명)로 분리
+function matRowsToStrings(matRows) {
+  const parts  = matRows.map(r => r.part + (r.spec ? '(' + r.spec + ')' : '') + ' ×' + r.qty).join(', ') || '미기재';
+  const models = matRows.map(r => r.model).filter(Boolean).join(', ');
+  return { parts, models };
+}
+
+// ── 주문여부/긴급도 선택 ─────────────────────────
+function selOpt(btn, rowId, cls) {
+  document.querySelectorAll('#' + rowId + ' .' + cls).forEach(b => b.classList.remove('a'));
+  btn.classList.add('a');
+}
+
+function getOpt(rowId) {
+  const btn = document.querySelector('#' + rowId + ' .ob.a');
+  return btn ? btn.textContent.trim() : '';
+}
+
+// ── 제출 후 폼 전체 초기화 ─────────────────────────
+function resetForm(p) {
+  ['site','dept','email','eng','model','note'].forEach(f => {
+    const el = document.getElementById(p + '-' + f);
+    if (el) el.value = '';
+  });
+  const dev = document.getElementById(p + '-dev');
+  if (dev) dev.value = '';
+  document.querySelectorAll('#' + p + '-ord-row .ob, #' + p + '-urg-row .ob')
+    .forEach(b => b.classList.remove('a'));
+}
+
+// ── 사진 ─────────────────────────────────────────
+function addPics(input, prevId, p) {
+  const prev = document.getElementById(prevId);
+  Array.from(input.files).forEach(f => {
+    const url = URL.createObjectURL(f);
+    const item = { file: f, url };
+    pics[p].push(item);
+    const d = document.createElement('div'); d.className = 'thumb';
+    const img = document.createElement('img'); img.src = url;
+    const btn = document.createElement('button'); btn.className = 'dx'; btn.innerHTML = '×';
+    btn.onclick = ev => { ev.stopPropagation(); pics[p].splice(pics[p].indexOf(item), 1); d.remove(); };
+    d.append(img, btn); prev.appendChild(d);
+  });
+  input.value = '';
+}
+
+// 이미지를 리사이즈하여 base64로 변환 (구글 드라이브 업로드용, 용량 절감)
+function fileToCompressedBase64(file, maxDim = 1280, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const scale = maxDim / Math.max(w, h);
+          w = Math.round(w * scale); h = Math.round(h * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve({ data: dataUrl.split(',')[1], mime: 'image/jpeg', name: (file.name || 'photo') + '.jpg' });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function collectPhotosData(p) {
+  dlog('사진 변환 시작 — pics.' + p + ' 개수: ' + pics[p].length);
+  try {
+    const result = await Promise.all(pics[p].map(x => fileToCompressedBase64(x.file)));
+    const totalBytes = result.reduce((s, r) => s + (r.data ? r.data.length : 0), 0);
+    dlog('사진 변환 완료 — ' + result.length + '장, 총 ' + totalBytes + 'byte(base64)');
+    return result;
+  } catch(e) { dlog('⚠ 사진 변환 실패: ' + e.message); return []; }
+}
+
+// ── 유틸 ─────────────────────────────────────────
+function nowStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth()+1).toString().padStart(2,'0') + '-' +
+    d.getDate().toString().padStart(2,'0') + ' ' +
+    d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+function newId() {
+  const d = new Date();
+  const ymd = d.getFullYear().toString().slice(2) +
+              (d.getMonth()+1).toString().padStart(2,'0') +
+              d.getDate().toString().padStart(2,'0');
+  const rand = Math.random().toString(36).slice(2,5).toUpperCase();
+  return 'R' + ymd + '-' + rand;
+}
+
+function toast(id, msg, ok) {
+  const t = document.getElementById(id);
+  t.className = 'toast ' + (ok ? 'ok' : 'err');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3500);
+}
+
+// ── 탭 ───────────────────────────────────────────
+function sw(name) {
+  document.querySelectorAll('.tb').forEach((b, i) =>
+    b.classList.toggle('active', ['estimate','order','history','settings'][i] === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'order') renderEstList();
+  if (name === 'history') { renderStats(); rh(); syncFromSheets(); }
+}
+
+// ── 설정 ─────────────────────────────────────────
+function loadCfg() {
+  try {
+    const c = JSON.parse(localStorage.getItem('itms-cfg') || '{}');
+    ['me','sn','gs','as'].forEach(k => { if (c[k] !== undefined) document.getElementById('cfg-'+k).checked = c[k]; });
+    ['sid','tid','pk','adm','url','sh'].forEach(k => { if (c[k]) document.getElementById('cfg-'+k).value = c[k]; });
+  } catch(e) {}
+}
+function saveCfg() {
+  try {
+    const obj = {};
+    ['me','sn','gs','as'].forEach(k => obj[k] = document.getElementById('cfg-'+k).checked);
+    ['sid','tid','pk','adm','url','sh'].forEach(k => obj[k] = document.getElementById('cfg-'+k).value);
+    localStorage.setItem('itms-cfg', JSON.stringify(obj));
+  } catch(e) {}
+}
+function clearCfg() { localStorage.removeItem('itms-cfg'); location.reload(); }
+
+// ── 디버그 로그 (임시 확인용) ─────────────────────
+function dlog(msg) {
+  const t = new Date().toLocaleTimeString('ko-KR');
+  const line = '[' + t + '] ' + msg;
+  console.log(line);
+  const box = document.getElementById('debug-log');
+  if (box) { box.textContent += line + '\n'; box.scrollTop = box.scrollHeight; }
+}
+window.addEventListener('error', function(ev) {
+  dlog('⚠ 전역 오류: ' + ev.message + ' (' + (ev.filename||'') + ':' + ev.lineno + ')');
+});
+
+// ── Sheets 전송 (iOS Safari 호환: hidden iframe + form 방식) ──
+// fetch()로 POST를 보내면 iOS Safari에서 Apps Script의 302 리다이렉트 처리 중
+// 요청이 유실되는 경우가 있어, 브라우저 네이티브 form 제출 방식으로 대체합니다.
+// (Apps Script doPost 쪽에서 e.parameter.payload 로 데이터를 받도록 되어 있어야 합니다.)
+function postToSheetsForm(targetUrl, payload) {
+  return new Promise((resolve) => {
+    dlog('전송 시작 → ' + targetUrl);
+    const frameName = 'gs-frame-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    const iframe = document.createElement('iframe');
+    iframe.name = frameName;
+    iframe.style.display = 'none';
+    iframe.onload = () => dlog('iframe onload (응답 수신됨)');
+    iframe.onerror = () => dlog('⚠ iframe onerror');
+    document.body.appendChild(iframe);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = targetUrl;
+    form.target = frameName;
+    form.style.display = 'none';
+    form.acceptCharset = 'UTF-8';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+    dlog('form 생성 완료 (payload ' + input.value.length + 'byte), submit() 호출');
+    try {
+      form.submit();
+      dlog('form.submit() 정상 실행됨');
+    } catch (err) {
+      dlog('⚠ form.submit() 예외: ' + err.message);
+    }
+
+    setTimeout(() => {
+      form.remove();
+      iframe.remove();
+      dlog('정리 완료 (1.5초 경과)');
+      resolve();
+    }, 1500);
+  });
+}
+
+async function postToSheets(data, extra) {
+  const on  = document.getElementById('cfg-gs').checked;
+  const url = document.getElementById('cfg-url').value.trim();
+  const sh  = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  dlog('postToSheets 호출 (연동:' + on + ', url있음:' + !!url + ')');
+  if (!on || !url) { dlog('⚠ 연동 꺼짐 또는 URL 없음 → 전송 안 함'); return; }
+  try { await postToSheetsForm(url, {...data, ...(extra||{}), sheetName: sh}); }
+  catch(e) { dlog('⚠ postToSheets 오류: ' + e.message); console.warn('Sheets 전송 실패', e); }
+}
+
+// ── 동기화 ───────────────────────────────────────
+async function syncFromSheets() {
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
+  dot.className = 'dot off'; txt.textContent = '동기화 중...';
+  const on = document.getElementById('cfg-gs').checked;
+  const url = document.getElementById('cfg-url').value.trim();
+  const sh  = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  const as  = document.getElementById('cfg-as').checked;
+  if (!on || !url || !as) {
+    dot.className = on ? 'dot on' : 'dot off';
+    txt.textContent = on ? 'Google Sheets 연동됨' : 'Google Sheets 미연동 — 설정 탭에서 URL 입력';
+    return;
+  }
+  try {
+    const res = await fetch(url + '?sheet=' + encodeURIComponent(sh));
+    const json = await res.json();
+    if (json.result === 'ok' && json.records) {
+      // 같은 접수ID로 품목별 행이 여러 개 나뉘어 있을 수 있으므로 먼저 ID 기준으로 묶는다
+      const grouped = {};
+      json.records.forEach(r => {
+        const id = r['접수ID'];
+        if (!id) return;
+        if (!grouped[id]) { grouped[id] = r; grouped[id].__items = []; }
+        grouped[id].__items.push({
+          part: r['장비/소모품'] || '',
+          qty: Number(r['수량']) || 1,
+          model: r['모델명'] || ''
+        });
+        // 상태 등은 마지막(가장 최근 처리된) 행 기준으로 갱신
+        if (r['처리상태']) grouped[id]['처리상태'] = r['처리상태'];
+      });
+
+      Object.keys(grouped).forEach(id => {
+        const r = grouped[id];
+        const combinedParts  = r.__items.map(it => it.part + ' ×' + it.qty).join(', ');
+        const combinedModels = r.__items.map(it => it.model).filter(Boolean).join(', ');
+        const urls = (r['첨부사진'] || '').split(',').map(s => s.trim()).filter(Boolean);
+        const local = records.find(x => x.id === id);
+        if (local) {
+          // 기존 항목 — 상태·사진·품목 구성 최신화
+          if (r['처리상태']) local.status = r['처리상태'];
+          if (urls.length) local.photoUrls = urls;
+          local.parts = combinedParts;
+          local.models = combinedModels;
+          local.items = r.__items;
+          local.qty = r.__items.length;
+        } else {
+          // 로컬에 없는 항목(새로고침 등으로 유실된 것) — 시트 데이터로 새로 추가
+          records.push({
+            id: id,
+            date: r['접수일시'] || '',
+            type: r['유형'] || '',
+            site: r['학교/현장명'] || '',
+            dept: r['부서명/성명'] || '',
+            email: r['메일주소'] || '',
+            eng: r['담당기사'] || '',
+            parts: combinedParts,
+            models: combinedModels,
+            items: r.__items,
+            qty: r.__items.length,
+            urg: r['긴급도'] || '일반',
+            note: r['비고'] || '',
+            photos: Number(r['첨부사진수']) || 0,
+            photoUrls: urls,
+            status: r['처리상태'] || '접수완료',
+            linkedOrder: r['연결건'] || null
+          });
+        }
+      });
+      records.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      renderStats(); rh(); updateCartBadge(); renderEstList();
+    }
+    dot.className = 'dot on';
+    txt.textContent = 'Google Sheets 동기화 완료 · ' + new Date().toLocaleTimeString('ko-KR');
+  } catch(e) {
+    dot.className = 'dot off';
+    txt.textContent = '동기화 실패 — 웹앱 URL을 확인하세요';
+  }
+}
+
+
+// ── 접수 완료 모달 ───────────────────────────────
+function showModal(rec) {
+  const urgBadge = rec.urg === '긴급'
+    ? '<span style="background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">🚨 긴급</span>'
+    : '<span style="background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">✔ 일반</span>';
+  const typeBadge = rec.type === '견적만'
+    ? '<span style="background:#EEEDFE;color:#3C3489;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">견적만</span>'
+    : rec.type === '주문만'
+    ? '<span style="background:#E1F5EE;color:#085041;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">주문만</span>'
+    : '<span style="background:#FFF3E0;color:#E65100;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">견적+주문</span>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-icon">✅</div>
+      <div class="modal-title">요청이 접수되었습니다!</div>
+      <div class="modal-sub">담당자가 확인 후 처리할 예정입니다</div>
+      <div style="text-align:center;margin-bottom:1rem">
+        <span class="modal-id">접수번호&nbsp; ${rec.id}</span>
+      </div>
+      <table class="modal-table">
+        <tr><td>접수일시</td><td>${rec.date}</td></tr>
+        <tr><td>현장명</td><td><strong>${rec.site}</strong></td></tr>
+        <tr><td>부서/성명</td><td>${rec.dept || '-'}</td></tr>
+        <tr><td>담당기사</td><td>${rec.eng}</td></tr>
+        <tr><td>장비/자재</td><td style="word-break:break-all">${rec.parts}</td></tr>
+        <tr><td>구분</td><td>${typeBadge}</td></tr>
+        <tr><td>긴급도</td><td>${urgBadge}</td></tr>
+        ${rec.note ? '<tr><td>비고</td><td>'+rec.note+'</td></tr>' : ''}
+      </table>
+      <div style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:.75rem">
+        📸 이 화면을 캡처해두시면 접수 확인에 활용하실 수 있습니다
+      </div>
+      <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✔ 확인</button>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ── 수정 모달 ────────────────────────────────────
+function editRecord(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-title">항목 수정</div>
+      <div style="text-align:center;margin-bottom:1rem"><span class="modal-id">접수번호&nbsp; ${r.id}</span></div>
+      <div class="fg">
+        <div class="fl"><label class="lbl">현장명</label><input id="ed-site" value="${r.site||''}"></div>
+        <div class="fl"><label class="lbl">부서명/성명</label><input id="ed-dept" value="${r.dept||''}"></div>
+        <div class="fl"><label class="lbl">메일주소</label><input id="ed-email" value="${r.email||''}"></div>
+        <div class="fl"><label class="lbl">담당기사</label>
+          <select id="ed-eng">
+            <option value="">-- 선택 --</option>
+            ${['조현석','김상일','김경훈','신태범','한광식','김동명','장재효','경영지원본부']
+              .map(n => `<option${r.eng===n?' selected':''}>${n}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fl full">
+          <label class="lbl">요청 자재 (품목별 수정)</label>
+          <table class="mat-table" style="width:100%">
+            <thead><tr><th>품목</th><th>모델명</th><th>규격/상세</th><th>수량</th><th></th></tr></thead>
+            <tbody id="ed-mat-body"></tbody>
+          </table>
+          <button class="add-row-btn" type="button" onclick="addMatRow('ed-mat-body')">＋ 품목 추가</button>
+        </div>
+        <div class="fl">
+          <label class="lbl">긴급도</label>
+          <div class="opt-row" id="ed-urg-row">
+            <button type="button" class="ob urg-type ${r.urg==='일반'?'a':''}" onclick="selOpt(this,'ed-urg-row','urg-type')">일반</button>
+            <button type="button" class="ob urg-type hi ${r.urg==='긴급'?'a':''}" onclick="selOpt(this,'ed-urg-row','urg-type')">긴급</button>
+          </div>
+        </div>
+        <div class="fl full"><label class="lbl">비고</label><textarea id="ed-note" rows="2">${r.note||''}</textarea></div>
+      </div>
+      <button class="modal-close" onclick="saveEdit('${r.id}')">💾 저장</button>
+      <button class="modal-close" style="background:#fff;color:var(--text);border:1px solid var(--border);margin-top:8px" onclick="this.closest('.modal-overlay').remove()">취소</button>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+
+  // 품목 행 채우기 (구조화된 items가 있으면 그대로, 없으면 기존 요약값으로 1행 구성)
+  const items = (r.items && r.items.length) ? r.items : [{ part: r.parts || '', model: r.models || '', spec: '', qty: r.qty || 1 }];
+  items.forEach(it => addMatRow('ed-mat-body', it.part, it.model, it.spec, it.qty));
+}
+
+async function saveEdit(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  r.site   = document.getElementById('ed-site').value.trim();
+  r.dept   = document.getElementById('ed-dept').value.trim();
+  r.email  = document.getElementById('ed-email').value.trim();
+  r.eng    = document.getElementById('ed-eng').value.trim();
+  r.urg    = getOpt('ed-urg-row') || r.urg;
+  r.note   = document.getElementById('ed-note').value.trim();
+
+  const items = getMatRows('ed-mat-body');
+  const { parts, models } = matRowsToStrings(items);
+  r.items  = items;
+  r.parts  = parts;
+  r.models = models;
+  r.qty    = items.length || 1;
+
+  document.querySelector('.modal-overlay')?.remove();
+  renderStats(); rh(); renderEstList(); updateCartBadge();
+
+  const gsOn = document.getElementById('cfg-gs').checked;
+  const url  = document.getElementById('cfg-url').value.trim();
+  const sh   = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  if (gsOn && url) {
+    try {
+      await postToSheetsForm(url, {
+        action: 'updateRecord', id: r.id, sheetName: sh,
+        site: r.site, dept: r.dept, email: r.email, eng: r.eng,
+        urg: r.urg, note: r.note, items: items
+      });
+      toast('cfg-toast', '수정 내용이 저장되었습니다', true);
+      setTimeout(syncFromSheets, 2500);
+    } catch(e) { dlog('⚠ saveEdit 오류: ' + e.message); }
+  }
+}
+
+// ── 삭제 ─────────────────────────────────────────
+async function deleteRecord(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm(r.id + ' (' + r.site + ') 항목을 삭제하시겠습니까?\n구글시트에서도 해당 행이 삭제됩니다.')) return;
+
+  records = records.filter(x => x.id !== id);
+  renderStats(); rh(); renderEstList(); updateCartBadge();
+
+  const gsOn = document.getElementById('cfg-gs').checked;
+  const url  = document.getElementById('cfg-url').value.trim();
+  const sh   = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  if (gsOn && url) {
+    try { await postToSheetsForm(url, {action:'deleteRecord', id, sheetName: sh}); }
+    catch(e) { dlog('⚠ deleteRecord 오류: ' + e.message); }
+  }
+}
+
+// ── EmailJS ──────────────────────────────────────
+async function sendEmail(params) {
+  const on  = document.getElementById('cfg-me').checked;
+  const sid = document.getElementById('cfg-sid').value.trim();
+  const tid = document.getElementById('cfg-tid').value.trim();
+  const pk  = document.getElementById('cfg-pk').value.trim();
+  const adm = document.getElementById('cfg-adm').value.trim();
+  if (!on || !sid || !tid || !pk || !adm) return;
+  if (typeof emailjs === 'undefined') return;
+  try {
+    emailjs.init(pk);
+    await emailjs.send(sid, tid, {...params, to_email: adm});
+  } catch(e) { console.warn('EmailJS 실패', e); }
+}
+
+// ── 견적/주문 요청 제출 ──────────────────────────
+async function submitEst() {
+  const site = document.getElementById('e-site').value.trim();
+  const eng  = document.getElementById('e-eng').value.trim();
+  if (!site) { toast('e-toast', '현장명을 입력해주세요', false); return; }
+  if (!eng)  { toast('e-toast', '담당 기사명을 입력해주세요', false); return; }
+
+  const ordType = getOpt('e-ord-row');
+  const urg     = getOpt('e-urg-row');
+  if (!ordType) { toast('e-toast', '주문 여부를 선택해주세요', false); return; }
+  if (!urg)     { toast('e-toast', '긴급도를 선택해주세요', false); return; }
+
+  const dept   = document.getElementById('e-dept').value.trim();
+  const email  = document.getElementById('e-email').value.trim();
+  const note   = document.getElementById('e-note').value.trim();
+  const matRows = getMatRows('e-mat-body');
+  const { parts: item, models } = matRowsToStrings(matRows);
+
+  const rec = {
+    id: newId(), date: nowStr(), type: ordType,
+    site, dept, email, eng, device: '', parts: item, models, items: matRows,
+    qty: matRows.length || 1, urg, note,
+    photos: pics.e.length, photoUrls: [], status: '접수완료', linkedOrder: null
+  };
+  records.unshift(rec);
+  updateCartBadge();
+
+  const photosData = await collectPhotosData('e');
+  await postToSheets(rec, { photos_data: photosData, items: matRows });
+  await sendEmail({ type: ordType, site, eng, item, urg, note, date: rec.date, id: rec.id, site_email: email });
+
+  showModal(rec);
+  pics.e = []; document.getElementById('e-prev').innerHTML = '';
+  document.getElementById('e-mat-body').innerHTML = '';
+  addMatRow('e-mat-body');
+  resetForm('e');
+  if (photosData.length) setTimeout(syncFromSheets, 3000);
+}
+
+// ── 신규 주문 제출 ───────────────────────────────
+async function submitNewOrder() {
+  const site = document.getElementById('o-site').value.trim();
+  const eng  = document.getElementById('o-eng').value.trim();
+  if (!site) { toast('o-toast', '현장명을 입력해주세요', false); return; }
+  if (!eng)  { toast('o-toast', '담당 기사명을 입력해주세요', false); return; }
+
+  const ordType = getOpt('o-ord-row');
+  const urg     = getOpt('o-urg-row');
+  if (!ordType) { toast('o-toast', '주문 여부를 선택해주세요', false); return; }
+  if (!urg)     { toast('o-toast', '긴급도를 선택해주세요', false); return; }
+
+  const dept   = document.getElementById('o-dept').value.trim();
+  const email  = document.getElementById('o-email').value.trim();
+  const note   = document.getElementById('o-note').value.trim();
+  const matRows = getMatRows('o-mat-body');
+  const { parts: item, models } = matRowsToStrings(matRows);
+
+  const rec = {
+    id: newId(), date: nowStr(), type: ordType,
+    site, dept, email, eng, device: '', parts: item, models, items: matRows,
+    qty: matRows.length || 1, urg, note,
+    photos: pics.o.length, photoUrls: [], status: '접수완료', linkedOrder: null
+  };
+  records.unshift(rec);
+
+  const photosData = await collectPhotosData('o');
+  await postToSheets(rec, { photos_data: photosData, items: matRows });
+  await sendEmail({ type: ordType, site, eng, item, urg, note, date: rec.date, id: rec.id, site_email: email });
+
+  showModal(rec);
+  pics.o = []; document.getElementById('o-prev').innerHTML = '';
+  document.getElementById('o-mat-body').innerHTML = '';
+  addMatRow('o-mat-body');
+  resetForm('o');
+  renderEstList();
+  if (photosData.length) setTimeout(syncFromSheets, 3000);
+}
+
+// ── 견적→주문 전환 ───────────────────────────────
+async function orderFromEst(estId) {
+  const est = records.find(r => r.id === estId);
+  if (!est) return;
+  const newRec = {
+    id: newId(), date: nowStr(), type: '주문만',
+    site: est.site, dept: est.dept, email: est.email, eng: est.eng,
+    parts: est.parts, models: est.models, items: est.items || [], qty: est.qty, urg: est.urg,
+    note: '[견적 ' + estId + ' 기반 주문] ' + (est.note || ''),
+    photos: 0, status: '접수완료', linkedOrder: estId
+  };
+  est.linkedOrder = newRec.id;
+  records.unshift(newRec);
+  updateCartBadge();
+  await postToSheets(newRec, { items: newRec.items });
+  await sendEmail({ type:'주문(견적기반)', site:est.site, eng:est.eng, item:est.parts, urg:est.urg, note:newRec.note, date:newRec.date, id:newRec.id, site_email:est.email });
+  renderEstList();
+  toast('o-toast', '[' + estId + '] 견적 기반 주문 완료 → ' + newRec.id, true);
+}
+
+// ── 견적 대기 목록 ───────────────────────────────
+function renderEstList() {
+  const wrap = document.getElementById('est-list-wrap');
+  const pending = records.filter(r => r.type === '견적만' && !r.linkedOrder && r.status !== '취소');
+  if (!pending.length) {
+    wrap.innerHTML = '<div class="sc" style="text-align:center;padding:1.5rem;color:var(--text-3);font-size:13px">주문 대기 중인 견적이 없습니다</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="sc"><div class="st">견적 요청건 — 주문 전환 <span class="pill pill-p">' + pending.length + '건 대기</span></div>' +
+    pending.map(r => `
+      <div class="est-card">
+        <div class="est-card-info">
+          <div class="est-card-title">
+            <span class="bx b-est">${r.id}</span> ${r.site}
+            <span class="bx ${r.urg==='긴급'?'b-hi':'b-low'}">${r.urg}</span>
+          </div>
+          <div class="est-card-sub">${r.parts} · ${r.eng} · ${r.date.slice(0,10)}</div>
+          ${r.note?'<div style="font-size:11px;color:var(--text-3);margin-top:2px">비고: '+r.note+'</div>':''}
+        </div>
+        <button class="icon-btn cart" onclick="orderFromEst('${r.id}')">🛒 주문 전환</button>
+      </div>
+    `).join('') + '</div>';
+}
+
+function updateCartBadge() {
+  const cnt = records.filter(r => r.type==='견적만' && !r.linkedOrder && r.status!=='취소').length;
+  const el = document.getElementById('cart-cnt');
+  el.style.display = cnt > 0 ? 'inline-flex' : 'none';
+  el.textContent = cnt;
+}
+
+function toggleNewOrder() {
+  const f = document.getElementById('new-order-form');
+  const btn = document.getElementById('new-order-toggle');
+  const open = f.style.display === 'none';
+  f.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '▲ 신규 주문 입력 닫기' : '▼ 신규 주문 입력 열기';
+}
+
+// ── 이력 통계 ────────────────────────────────────
+function renderStats() {
+  const total = records.length;
+  const est   = records.filter(r => r.type === '견적만').length;
+  const ord   = records.filter(r => r.type === '주문만').length;
+  const hi    = records.filter(r => r.urg === '긴급' && r.status !== '완료').length;
+  document.getElementById('stat-grid').innerHTML = [
+    ['전체 접수', total, ''],
+    ['견적만', est, 'color:var(--purple-dark)'],
+    ['주문만', ord, 'color:var(--teal)'],
+    ['긴급 미처리', hi, 'color:var(--red)'],
+  ].map(([l,n,s]) => `<div class="stat-card"><div class="stat-n" style="${s}">${n}</div><div class="stat-l">${l}</div></div>`).join('');
+}
+
+// ── 이력 테이블 ──────────────────────────────────
+function rh() {
+  const q    = (document.getElementById('h-q').value || '').toLowerCase();
+  const type = document.getElementById('h-type').value;
+  const urg  = document.getElementById('h-urg').value;
+  const stat = document.getElementById('h-stat').value;
+  const list = records.filter(r =>
+    (!q || r.site.toLowerCase().includes(q) || r.eng.toLowerCase().includes(q)) &&
+    (!type || r.type === type) && (!urg || r.urg === urg) && (!stat || r.status === stat));
+  const tbody = document.getElementById('hbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-3)">해당 이력 없음</td></tr>';
+    return;
+  }
+  const typeCls = t => t==='견적만'?'b-est':t==='주문만'?'b-ord':'b-both';
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td style="font-size:11px;color:var(--text-2)">${r.date}</td>
+      <td><span class="bx ${typeCls(r.type)}">${r.type}</span></td>
+      <td style="font-weight:600">${r.site}</td>
+      <td>${r.eng}</td>
+      <td title="${r.parts}">${r.parts}</td>
+      <td><span class="bx ${r.urg==='긴급'?'b-hi':'b-low'}">${r.urg}</span></td>
+      <td>
+        <select class="ss" onchange="updateStatus('${r.id}',this.value)">
+          <option ${r.status==='접수완료'?'selected':''}>접수완료</option>
+          <option ${r.status==='처리중'?'selected':''}>처리중</option>
+          <option ${r.status==='완료'?'selected':''}>완료</option>
+          <option ${r.status==='취소'?'selected':''}>취소</option>
+        </select>
+      </td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+        <button class="icon-btn" onclick="showDetail('${r.id}')">상세</button>
+        <button class="icon-btn" onclick="editRecord('${r.id}')">✎ 수정</button>
+        <button class="icon-btn" style="color:var(--red)" onclick="deleteRecord('${r.id}')">🗑 삭제</button>
+        ${r.type==='견적만'&&!r.linkedOrder&&r.status!=='취소'
+          ?'<button class="icon-btn cart" onclick="orderFromEst(\''+r.id+'\')">주문</button>':''}
+        ${r.linkedOrder?'<span style="font-size:10px;color:var(--text-3)">→'+r.linkedOrder+'</span>':''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── 상태 업데이트 ────────────────────────────────
+async function updateStatus(id, val) {
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+  rec.status = val; renderStats();
+  const gsOn = document.getElementById('cfg-gs').checked;
+  const url  = document.getElementById('cfg-url').value.trim();
+  const sh   = document.getElementById('cfg-sh').value.trim() || '이력관리';
+  if (gsOn && url) {
+    try { await postToSheetsForm(url, {action:'updateStatus', id, status:val, sheetName:sh}); }
+    catch(e) {}
+  }
+  if (document.getElementById('cfg-sn').checked && rec.email)
+    sendEmail({ type:'상태업데이트', site:rec.site, eng:rec.eng, item:rec.parts, status:val, id, site_email:rec.email });
+}
+
+// ── 상세 보기 ────────────────────────────────────
+function showDetail(id) {
+  const r  = records.find(x => x.id === id);
+  const dw = document.getElementById('dw');
+  if (!r) return;
+  if (dw.dataset.open === id) { dw.innerHTML = ''; dw.dataset.open = ''; return; }
+  dw.dataset.open = id;
+  const stCls = r.status==='완료'?'b-done':r.status==='처리중'?'b-wip':r.status==='취소'?'b-cancel':'b-new';
+  const typeCls = r.type==='견적만'?'b-est':r.type==='주문만'?'b-ord':'b-both';
+  dw.innerHTML = `<div class="dcard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:14px;font-weight:600">${r.id} 상세</span>
+      <button onclick="document.getElementById('dw').innerHTML=''" style="border:none;background:none;cursor:pointer;color:var(--text-2);font-size:18px">×</button>
+    </div>
+    ${[
+      ['접수일시', r.date],
+      ['구분', '<span class="bx '+typeCls+'">'+r.type+'</span>'],
+      ['현장명', r.site], ['부서/성명', r.dept||'-'], ['메일', r.email||'-'],
+      ['담당기사', r.eng], ['장비/자재', r.parts], ['모델명', r.models||'-'],
+      ['긴급도', '<span class="bx '+(r.urg==='긴급'?'b-hi':'b-low')+'">'+r.urg+'</span>'],
+      ['비고', r.note||'-'],
+      ['첨부사진', r.photoUrls && r.photoUrls.length
+        ? r.photoUrls.map((u,i)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:underline;margin-left:6px">사진'+(i+1)+'</a>').join('')
+        : (r.photos ? r.photos+'장 (업로드 처리 중이거나 확인 불가)' : '없음')],
+      ['연결건', r.linkedOrder||'-'],
+      ['상태', '<span class="bx '+stCls+'">'+r.status+'</span>']
+    ].map(([k,v])=>'<div class="dr"><span class="dk">'+k+'</span><span style="text-align:right;word-break:break-all">'+v+'</span></div>').join('')}
+    ${r.type==='견적만'&&!r.linkedOrder&&r.status!=='취소'
+      ?'<div style="margin-top:10px"><button class="icon-btn cart" style="width:100%;justify-content:center;padding:8px" onclick="orderFromEst(\''+r.id+'\');document.getElementById(\'dw\').innerHTML=\'\'">🛒 이 견적으로 주문 전환</button></div>':''}
+  </div>`;
+}
+
+// ── 연동 테스트 ──────────────────────────────────
+async function testConn() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const sid = document.getElementById('cfg-sid').value.trim();
+  if (!url && !sid) { toast('cfg-toast', '연동 정보를 먼저 입력하세요', false); return; }
+  const t = document.getElementById('cfg-toast');
+  t.className = 'toast ok'; t.textContent = '테스트 전송 중...'; t.style.display = 'block';
+  if (url) {
+    const sh = document.getElementById('cfg-sh').value.trim() || '이력관리';
+    const testRec = { id:'TEST-'+Date.now(), date:nowStr(), type:'테스트', site:'연동테스트', dept:'', email:'', eng:'', device:'', parts:'', qty:1, urg:'일반', note:'연동 테스트', photos:0, status:'접수완료', linkedOrder:null };
+    dlog('연동 테스트 시작: ' + testRec.id);
+    try {
+      await postToSheetsForm(url, {...testRec, sheetName:sh});
+      toast('cfg-toast', 'Google Sheets 전송 성공 (구글시트에서 ' + testRec.id + ' 확인해보세요)', true);
+    } catch(e) { dlog('⚠ testConn 오류: ' + e.message); toast('cfg-toast', '전송 중 오류가 발생했습니다', false); }
+  } else {
+    toast('cfg-toast', '설정값 저장됨 — 배포 후 확인하세요', true);
+  }
+}
+
+// ── 초기화 ───────────────────────────────────────
+loadCfg();
+addMatRow('e-mat-body');
+addMatRow('o-mat-body');
+renderEstList();
+updateCartBadge();
+syncFromSheets();
+</script>
+</body>
+</html>
